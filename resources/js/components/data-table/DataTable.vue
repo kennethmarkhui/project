@@ -7,6 +7,7 @@ import {
     getCoreRowModel,
     type OnChangeFn,
     type PaginationState,
+    type SortingState,
     type Updater,
     useVueTable,
 } from '@tanstack/vue-table';
@@ -24,21 +25,24 @@ const props = defineProps<{
     data: Paginated<TData[]>;
     filters: Array<{ id: string; value: unknown }> | null;
     search: string | null;
+    sort: Array<{ id: string; desc: boolean }> | null;
 }>();
 
 const path = window.location.origin + window.location.pathname;
 
 const columnFilters = ref<ColumnFiltersState>(props.filters ?? []);
 const globalFilter = ref(props.search ?? '');
+const sorting = ref<SortingState>(props.sort ?? []);
 const pagination = ref<PaginationState>({
     pageIndex: props.data.current_page - 1,
     pageSize: props.data.per_page,
 });
 
 const refetch = () => {
-    const query: { search?: string; page?: number; filters?: string } = {};
+    const query: { search?: string; page?: number; sort?: string; filters?: string } = {};
     const search = globalFilter.value;
     const filters = columnFilters.value;
+    const sort = sorting.value;
     const page = pagination.value.pageIndex;
 
     if (search) {
@@ -47,6 +51,10 @@ const refetch = () => {
 
     if (filters.length > 0) {
         query.filters = JSON.stringify(filters);
+    }
+
+    if (sort.length > 0) {
+        query.sort = JSON.stringify(sort);
     }
 
     query.page = page && page + 1;
@@ -74,6 +82,11 @@ const handleFilterChange: OnChangeFn<ColumnFiltersState> = (updaterOrValue) => {
 const handleSearchChange: OnChangeFn<any> = (updaterOrValue) => {
     valueUpdater(updaterOrValue, globalFilter);
     pagination.value = { pageIndex: 0, pageSize: props.data.per_page };
+    refetch();
+};
+
+const handleSortChange: OnChangeFn<SortingState> = (updaterOrValue) => {
+    valueUpdater(updaterOrValue, sorting);
     refetch();
 };
 
@@ -106,14 +119,19 @@ const table = useVueTable({
         get globalFilter() {
             return globalFilter.value;
         },
+        get sorting() {
+            return sorting.value;
+        },
         get pagination() {
             return pagination.value;
         },
     },
-    manualPagination: true,
     manualFiltering: true,
+    manualSorting: true,
+    manualPagination: true,
     onColumnFiltersChange: handleFilterChange,
     onGlobalFilterChange: handleSearchChange,
+    onSortingChange: handleSortChange,
     onPaginationChange: handlePageChange,
     getCoreRowModel: getCoreRowModel(),
 });
@@ -123,6 +141,7 @@ const table = useVueTable({
     <!-- <pre>{{ 'columnFilters: ' + JSON.stringify(columnFilters, null, 2) }}</pre>
     <pre>{{ 'globalFilter: ' + globalFilter }}</pre>
     <pre>{{ 'pagination: ' + JSON.stringify(pagination, null, 2) }}</pre> -->
+    <!-- <pre>{{ 'sorting: ' + JSON.stringify(sorting, null, 2) }}</pre> -->
     <div class="flex w-full flex-col gap-2.5 overflow-auto">
         <DataTableToolbar :table="table" @reset="handleReset">
             <template #search>

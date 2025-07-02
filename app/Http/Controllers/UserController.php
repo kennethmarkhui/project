@@ -37,6 +37,15 @@ class UserController extends Controller
             }
         });
 
+        $query->when($request->query('sort'), function (Builder $query, ?string $sorting) {
+            $sorting = json_decode($sorting, true);
+            foreach ($sorting as $sort) {
+                if (!empty($sort['id'] &&  !empty($sort['desc']))) {
+                    $query->orderBy($sort['id'], $sort['desc'] ? 'desc' : 'asc');
+                }
+            }
+        });
+
         $result = $query->paginate(self::PER_PAGE, ['*'], 'page', $request->query('page'))
             ->withQueryString()
             ->through(fn($user) => [
@@ -51,7 +60,8 @@ class UserController extends Controller
         return Inertia::render('Users', [
             'users' => $result,
             'search' => $request->query('search'),
-            'filters' => json_decode($request->query('filters'), true)
+            'filters' => json_decode($request->query('filters'), true),
+            'sort' => json_decode($request->query('sort'), true)
         ]);
     }
 

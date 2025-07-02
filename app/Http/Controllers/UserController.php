@@ -31,7 +31,7 @@ class UserController extends Controller
         $query->when($request->query('filters'), function (Builder $query, ?string $filters) {
             $filters = json_decode($filters, true);
             foreach ($filters as $filter) {
-                if (!empty($filter['id'] && !empty($filter['value']))) {
+                if (isset($filter['id']) && isset($filter['value'])) {
                     $query->whereIn($filter['id'], $filter['value']);
                 }
             }
@@ -40,7 +40,7 @@ class UserController extends Controller
         $query->when($request->query('sort'), function (Builder $query, ?string $sorting) {
             $sorting = json_decode($sorting, true);
             foreach ($sorting as $sort) {
-                if (!empty($sort['id'] &&  !empty($sort['desc']))) {
+                if (isset($sort['id']) &&  isset($sort['desc'])) {
                     $query->orderBy($sort['id'], $sort['desc'] ? 'desc' : 'asc');
                 }
             }

@@ -1,10 +1,11 @@
 <script setup lang="ts">
+import { Link } from '@inertiajs/vue3';
 import { MoreHorizontal } from 'lucide-vue-next';
 
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
-defineProps<{
+const props = defineProps<{
     id: number;
 }>();
 </script>
@@ -18,7 +19,9 @@ defineProps<{
             </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-            <DropdownMenuItem>Edit</DropdownMenuItem>
+            <DropdownMenuItem as-child>
+                <Link :href="route(`${route().current()}.edit`, props.id)">Edit</Link>
+            </DropdownMenuItem>
         </DropdownMenuContent>
     </DropdownMenu>
 </template>

@@ -39,22 +39,26 @@ export interface User {
 
 export interface Paginated<T> {
     data: T;
-    current_page: number;
-    first_page_url: string;
-    from: number;
-    last_page: number;
-    last_page_url: string;
-    links: Array<{
-        active: boolean;
-        label: string;
-        url: string | null;
-    }>;
-    next_page_url: string | null;
-    path: string;
-    per_page: number;
-    prev_page_url: string | null;
-    to: number;
-    total: number;
+    links: {
+        first: string;
+        last: string;
+        next: string | null;
+        prev: string | null;
+    };
+    meta: {
+        current_page: number;
+        from: number;
+        last_page: number;
+        links: Array<{
+            active: boolean;
+            label: string;
+            url: string | null;
+        }>;
+        path: string;
+        per_page: number;
+        to: number;
+        total: number;
+    };
 }
 
 export type BreadcrumbItemType = BreadcrumbItem;

@@ -1,11 +1,11 @@
-import { route } from 'ziggy-js';
+import { route as ziggyRoute } from 'ziggy-js';
 
 declare global {
-    let route: typeof route;
+    let route: typeof ziggyRoute;
 }
 
 declare module '@vue/runtime-core' {
     interface ComponentCustomProperties {
-        route: typeof route;
+        route: typeof ziggyRoute;
     }
 }

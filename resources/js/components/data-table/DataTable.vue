@@ -1,5 +1,5 @@
 <script setup lang="ts" generic="TData, TValue">
-import { router } from '@inertiajs/vue3';
+import { router, usePage } from '@inertiajs/vue3';
 import {
     type ColumnDef,
     type ColumnFiltersState,
@@ -28,14 +28,14 @@ const props = defineProps<{
     sort: Array<{ id: string; desc: boolean }> | null;
 }>();
 
-const path = window.location.origin + window.location.pathname;
+const path = usePage().props.ziggy.location;
 
 const columnFilters = ref<ColumnFiltersState>(props.filters ?? []);
 const globalFilter = ref(props.search ?? '');
 const sorting = ref<SortingState>(props.sort ?? []);
 const pagination = ref<PaginationState>({
-    pageIndex: props.data.current_page - 1,
-    pageSize: props.data.per_page,
+    pageIndex: props.data.meta.current_page - 1,
+    pageSize: props.data.meta.per_page,
 });
 
 const refetch = () => {
@@ -75,13 +75,13 @@ const valueUpdater = <T extends Updater<unknown>>(updaterOrValue: T, ref: Ref) =
 
 const handleFilterChange: OnChangeFn<ColumnFiltersState> = (updaterOrValue) => {
     valueUpdater(updaterOrValue, columnFilters);
-    pagination.value = { pageIndex: 0, pageSize: props.data.per_page };
+    pagination.value = { pageIndex: 0, pageSize: props.data.meta.per_page };
     refetch();
 };
 
 const handleSearchChange: OnChangeFn<any> = (updaterOrValue) => {
     valueUpdater(updaterOrValue, globalFilter);
-    pagination.value = { pageIndex: 0, pageSize: props.data.per_page };
+    pagination.value = { pageIndex: 0, pageSize: props.data.meta.per_page };
     refetch();
 };
 
@@ -98,7 +98,7 @@ const handlePageChange: OnChangeFn<PaginationState> = (updaterOrValue) => {
 const handleReset = () => {
     columnFilters.value = [];
     globalFilter.value = '';
-    pagination.value = { pageIndex: 0, pageSize: props.data.per_page };
+    pagination.value = { pageIndex: 0, pageSize: props.data.meta.per_page };
     refetch();
 };
 
@@ -110,7 +110,7 @@ const table = useVueTable({
         return props.columns;
     },
     get rowCount() {
-        return props.data.total;
+        return props.data.meta.total;
     },
     state: {
         get columnFilters() {

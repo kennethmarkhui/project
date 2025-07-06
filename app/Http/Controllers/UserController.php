@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\UpdateUserRequest;
+use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -47,18 +49,11 @@ class UserController extends Controller
         });
 
         $result = $query->paginate(self::PER_PAGE, ['*'], 'page', $request->query('page'))
-            ->withQueryString()
-            ->through(fn($user) => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'role' => $user->role,
-                'status' => $user->status
-            ]);
+            ->withQueryString();
 
 
-        return Inertia::render('Users', [
-            'users' => $result,
+        return Inertia::render('users/Index', [
+            'users' => UserResource::collection($result),
             'search' => $request->query('search'),
             'filters' => json_decode($request->query('filters'), true),
             'sort' => json_decode($request->query('sort'), true)
@@ -94,15 +89,25 @@ class UserController extends Controller
      */
     public function edit(User $user)
     {
-        //
+        return Inertia::render('users/Edit', [
+            'user' => new UserResource($user)
+        ]);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, User $user)
+    public function update(UpdateUserRequest $request, User $user)
     {
-        //
+        $user->fill($request->validated());
+
+        if ($user->isDirty('email')) {
+            $user->email_verified_at = null;
+        }
+
+        $user->save();
+
+        return to_route('users');
     }
 
     /**

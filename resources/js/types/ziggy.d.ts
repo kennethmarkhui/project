@@ -4,7 +4,7 @@ declare global {
     let route: typeof ziggyRoute;
 }
 
-declare module '@vue/runtime-core' {
+declare module 'vue' {
     interface ComponentCustomProperties {
         route: typeof ziggyRoute;
     }

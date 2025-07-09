@@ -1,5 +1,4 @@
 <script setup lang="ts" generic="TData, TValue">
-import { router, usePage } from '@inertiajs/vue3';
 import {
     type ColumnDef,
     type ColumnFiltersState,
@@ -12,60 +11,36 @@ import {
     useVueTable,
 } from '@tanstack/vue-table';
 import { debounce } from 'lodash';
-import { Ref, ref } from 'vue';
+import { Ref } from 'vue';
 
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import type { Paginated } from '@/types';
 import DataTablePagination from './DataTablePagination.vue';
 import DataTableToolbar from './DataTableToolbar.vue';
 
-const props = defineProps<{
+interface Props {
     columns: ColumnDef<TData, TValue>[];
-    data: Paginated<TData[]>;
-    filters: Array<{ id: string; value: unknown }> | null;
-    search: string | null;
-    sort: Array<{ id: string; desc: boolean }> | null;
-}>();
+    data: TData[];
+    total: number;
+}
 
-const path = usePage().props.ziggy.location;
-
-const columnFilters = ref<ColumnFiltersState>(props.filters ?? []);
-const globalFilter = ref(props.search ?? '');
-const sorting = ref<SortingState>(props.sort ?? []);
-const pagination = ref<PaginationState>({
-    pageIndex: props.data.meta.current_page - 1,
-    pageSize: props.data.meta.per_page,
-});
-
-const refetch = () => {
-    const query: { search?: string; page?: number; sort?: string; filters?: string } = {};
-    const search = globalFilter.value;
-    const filters = columnFilters.value;
-    const sort = sorting.value;
-    const page = pagination.value.pageIndex;
-
-    if (search) {
-        query.search = search;
-    }
-
-    if (filters.length > 0) {
-        query.filters = JSON.stringify(filters);
-    }
-
-    if (sort.length > 0) {
-        query.sort = JSON.stringify(sort);
-    }
-
-    query.page = page && page + 1;
-
-    const data = Object.fromEntries(Object.entries(query).filter(([_key, value]) => Boolean(value)));
-
-    router.get(path, data, {
-        preserveState: true,
-        replace: true,
-    });
+type Emits = {
+    reset: [];
 };
+
+const props = defineProps<Props>();
+
+const emits = defineEmits<Emits>();
+
+const columnFilters = defineModel<ColumnFiltersState>('filters', { default: [] });
+const globalFilter = defineModel<string>('search', { default: '' });
+const sorting = defineModel<SortingState>('sort', { default: [] });
+const pagination = defineModel<PaginationState>('pagination', {
+    default: {
+        pageIndex: 0,
+        pageSize: 10,
+    },
+});
 
 const debouncedInput = debounce((value: string | number) => table.setGlobalFilter(value), 300);
 
@@ -73,44 +48,45 @@ const valueUpdater = <T extends Updater<unknown>>(updaterOrValue: T, ref: Ref) =
     ref.value = typeof updaterOrValue === 'function' ? updaterOrValue(ref.value) : updaterOrValue;
 };
 
-const handleFilterChange: OnChangeFn<ColumnFiltersState> = (updaterOrValue) => {
+const onColumnFiltersChange: OnChangeFn<ColumnFiltersState> = (updaterOrValue) => {
     valueUpdater(updaterOrValue, columnFilters);
-    pagination.value = { pageIndex: 0, pageSize: props.data.meta.per_page };
-    refetch();
+    pagination.value = { pageIndex: 0, pageSize: 10 };
 };
 
-const handleSearchChange: OnChangeFn<any> = (updaterOrValue) => {
+const onGlobalFilterChange: OnChangeFn<any> = (updaterOrValue) => {
     valueUpdater(updaterOrValue, globalFilter);
-    pagination.value = { pageIndex: 0, pageSize: props.data.meta.per_page };
-    refetch();
+    pagination.value = { pageIndex: 0, pageSize: 10 };
 };
 
-const handleSortChange: OnChangeFn<SortingState> = (updaterOrValue) => {
+const onSortingChange: OnChangeFn<SortingState> = (updaterOrValue) => {
     valueUpdater(updaterOrValue, sorting);
-    refetch();
 };
 
-const handlePageChange: OnChangeFn<PaginationState> = (updaterOrValue) => {
+const onPaginationChange: OnChangeFn<PaginationState> = (updaterOrValue) => {
     valueUpdater(updaterOrValue, pagination);
-    refetch();
 };
 
 const handleReset = () => {
     columnFilters.value = [];
     globalFilter.value = '';
-    pagination.value = { pageIndex: 0, pageSize: props.data.meta.per_page };
-    refetch();
+    pagination.value = { pageIndex: 0, pageSize: 10 };
+    emits('reset');
 };
 
 const table = useVueTable({
     get data() {
-        return props.data.data;
+        return props.data;
     },
     get columns() {
         return props.columns;
     },
     get rowCount() {
-        return props.data.meta.total;
+        return props.total;
+    },
+    initialState: {
+        columnVisibility: {
+            deleted_at: false,
+        },
     },
     state: {
         get columnFilters() {
@@ -129,10 +105,10 @@ const table = useVueTable({
     manualFiltering: true,
     manualSorting: true,
     manualPagination: true,
-    onColumnFiltersChange: handleFilterChange,
-    onGlobalFilterChange: handleSearchChange,
-    onSortingChange: handleSortChange,
-    onPaginationChange: handlePageChange,
+    onColumnFiltersChange,
+    onGlobalFilterChange,
+    onSortingChange,
+    onPaginationChange,
     getCoreRowModel: getCoreRowModel(),
 });
 </script>
@@ -140,8 +116,8 @@ const table = useVueTable({
 <template>
     <!-- <pre>{{ 'columnFilters: ' + JSON.stringify(columnFilters, null, 2) }}</pre>
     <pre>{{ 'globalFilter: ' + globalFilter }}</pre>
+    <pre>{{ 'sorting: ' + JSON.stringify(sorting, null, 2) }}</pre>
     <pre>{{ 'pagination: ' + JSON.stringify(pagination, null, 2) }}</pre> -->
-    <!-- <pre>{{ 'sorting: ' + JSON.stringify(sorting, null, 2) }}</pre> -->
     <div class="flex w-full flex-col gap-2.5 overflow-auto">
         <DataTableToolbar :table="table" @reset="handleReset">
             <template #search>

@@ -8,13 +8,18 @@ Route::get('/', function () {
     return Inertia::render('Welcome');
 })->name('home');
 
-Route::get('dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('dashboard', function () {
+        return Inertia::render('Dashboard');
+    })->name('dashboard');
 
-Route::get('users', [UserController::class, 'index'])->middleware(['auth', 'verified'])->name('users');
-Route::get('/users/edit/{user}', [UserController::class, 'edit'])->middleware(['auth', 'verified'])->name('users.edit');
-Route::patch('/users/edit/{user}', [UserController::class, 'update'])->middleware(['auth', 'verified'])->name('users.update');
+    Route::get('users', [UserController::class, 'index'])->name('users');
+    Route::get('/users/edit/{user}', [UserController::class, 'edit'])->withTrashed()->name('users.edit');
+    Route::patch('/users/{user}', [UserController::class, 'update'])->name('users.update');
+    Route::delete('/users/{user}', [UserController::class, 'destroy'])->withTrashed()->name('users.destroy');
+    Route::patch('/users/{user}/restore', [UserController::class, 'restore'])->withTrashed()->name('users.restore');
+});
+
 
 require __DIR__ . '/settings.php';
 require __DIR__ . '/auth.php';

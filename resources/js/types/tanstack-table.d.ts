@@ -4,6 +4,7 @@ declare module '@tanstack/vue-table' {
     interface ColumnMeta {
         label?: string;
         options?: Option[];
+        variant?: 'multiSelect' | 'select';
     }
 }
 

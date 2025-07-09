@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import DeleteUser from '@/components/users/DeleteUser.vue';
+import RestoreUser from '@/components/users/RestoreUser.vue';
 import { ROLES, STATUS } from '@/constants';
 import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem, User } from '@/types';
@@ -30,6 +32,8 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
+const isDeleted = Boolean(props.user.data.deleted_at);
+
 const form = useForm({
     name: props.user.data.name,
     email: props.user.data.email,
@@ -47,7 +51,7 @@ const submit = () => {
 <template>
     <Head title="Edit User" />
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="px-4 py-6">
+        <div class="space-y-12 px-4 py-6">
             <Heading
                 title="Edit User Profile"
                 description="Update user details such as name, email, role, and account status. Ensure all changes are accurate before saving."
@@ -57,20 +61,20 @@ const submit = () => {
                 <form @submit.prevent="submit" class="space-y-6">
                     <div>
                         <Label for="name">Name</Label>
-                        <Input id="name" v-model="form.name" required placeholder="Full name" />
+                        <Input id="name" :disabled="isDeleted" v-model="form.name" required placeholder="Full name" />
                         <InputError :message="form.errors.name" />
                     </div>
 
                     <div>
                         <Label for="email">Email</Label>
-                        <Input id="email" type="email" v-model="form.email" required placeholder="Email address" />
+                        <Input id="email" :disabled="isDeleted" type="email" v-model="form.email" required placeholder="Email address" />
                         <InputError :message="form.errors.email" />
                     </div>
 
                     <div>
                         <Label for="role">Role</Label>
                         <Select v-model="form.role">
-                            <SelectTrigger id="role">
+                            <SelectTrigger id="role" :disabled="isDeleted">
                                 <SelectValue placeholder="Select a role" />
                             </SelectTrigger>
                             <SelectContent>
@@ -83,7 +87,7 @@ const submit = () => {
                     <div>
                         <Label for="status">Status</Label>
                         <Select v-model="form.status">
-                            <SelectTrigger id="status">
+                            <SelectTrigger id="status" :disabled="isDeleted">
                                 <SelectValue placeholder="Select a status" />
                             </SelectTrigger>
                             <SelectContent>
@@ -96,6 +100,17 @@ const submit = () => {
                     <Button :disabled="!form.isDirty">Save</Button>
                 </form>
             </div>
+
+            <template v-if="isDeleted">
+                <RestoreUser :id="props.user.data.id" />
+                <DeleteUser
+                    :id="props.user.data.id"
+                    confirm-text="Delete Permanently"
+                    dialog-title="Are you sure you want to delete the user permanently?"
+                    dialog-description="Once the user is deleted, all of its resources and data will also be permanently deleted."
+                />
+            </template>
+            <DeleteUser v-else :id="props.user.data.id" />
         </div>
     </AppLayout>
 </template>

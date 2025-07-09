@@ -13,6 +13,7 @@ import type { Option } from '@/types/tanstack-table';
 
 interface Props {
     column?: Column<TData, TValue>;
+    multiple?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -40,13 +41,16 @@ watch(
 const onItemSelect = (option: Option, isSelected: boolean) => {
     if (!props.column) return;
 
-    if (isSelected) {
-        selectedValues.value.delete(option.value);
+    if (props.multiple) {
+        if (isSelected) {
+            selectedValues.value.delete(option.value);
+        } else {
+            selectedValues.value.add(option.value);
+        }
+        props.column.setFilterValue(selectedValues.value.size ? Array.from(selectedValues.value) : undefined);
     } else {
-        selectedValues.value.add(option.value);
+        props.column.setFilterValue(isSelected ? undefined : [option.value]);
     }
-
-    props.column.setFilterValue(selectedValues.value.size ? Array.from(selectedValues.value) : undefined);
 };
 
 const onReset = () => {

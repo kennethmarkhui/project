@@ -34,12 +34,20 @@ watch(
     <div class="flex w-full items-start justify-between gap-2 p-1">
         <div class="flex flex-1 flex-wrap items-center gap-2">
             <slot name="search" />
-            <DataTableFacetedFilter v-for="column in columns" :key="column.id" :column="column" />
+            <DataTableFacetedFilter
+                v-for="column in columns"
+                :key="column.id"
+                :column="column"
+                :multiple="column.columnDef.meta?.variant === 'multiSelect'"
+            />
+
             <Button v-if="isFiltered" aria-label="Reset filters" variant="outline" size="sm" class="border-dashed" @click="onReset">
                 <X />
                 Reset
             </Button>
         </div>
-        <div class="flex items-center gap-2"><DataTableViewOptions :table="props.table" /></div>
+        <div class="flex items-center gap-2">
+            <DataTableViewOptions :table="props.table" />
+        </div>
     </div>
 </template>

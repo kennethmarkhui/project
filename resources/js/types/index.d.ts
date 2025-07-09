@@ -35,6 +35,7 @@ export interface User {
     status: string;
     created_at: string;
     updated_at: string;
+    deleted_at: string | null;
 }
 
 export interface Paginated<T> {

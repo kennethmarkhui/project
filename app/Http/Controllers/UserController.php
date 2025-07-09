@@ -48,15 +48,27 @@ class UserController extends Controller
             }
         });
 
+        $query->when($request->query('deleted'), function (Builder $query, ?string $deleted) {
+            if ($deleted === 'only') {
+                $query->onlyTrashed();
+            } elseif ($deleted === 'with') {
+                $query->withTrashed();
+            }
+        });
+
         $result = $query->paginate(self::PER_PAGE, ['*'], 'page', $request->query('page'))
             ->withQueryString();
 
+        $filters =  array_merge(
+            json_decode($request->query('filters'), true) ?? [],
+            $request->filled('deleted') ? [['id' => 'deleted_at', 'value' => [$request->query('deleted')]]] : []
+        ) ?: null;
 
         return Inertia::render('users/Index', [
             'users' => UserResource::collection($result),
             'search' => $request->query('search'),
-            'filters' => json_decode($request->query('filters'), true),
-            'sort' => json_decode($request->query('sort'), true)
+            'filters' => $filters,
+            'sort' => json_decode($request->query('sort'), true),
         ]);
     }
 
@@ -113,8 +125,25 @@ class UserController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(User $user)
+    public function destroy(Request $request, User $user)
     {
-        //
+        if ($request->user()->id === $user->id) {
+            abort(403);
+        }
+
+        if ($user->trashed()) {
+            $user->forceDelete();
+        } else {
+            $user->delete();
+        }
+
+        return to_route('users');
+    }
+
+    public function restore(User $user)
+    {
+        $user->restore();
+
+        return to_route('users');
     }
 }

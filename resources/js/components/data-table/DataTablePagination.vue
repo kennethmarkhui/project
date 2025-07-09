@@ -20,8 +20,10 @@ const props = defineProps<Props>();
             <div className="flex-1 whitespace-nowrap text-muted-foreground text-sm">
                 Showing {{ props.table.getState().pagination.pageIndex * props.table.getState().pagination.pageSize + 1 }} to
                 {{
-                    props.table.getState().pagination.pageIndex * props.table.getState().pagination.pageSize +
-                    props.table.getState().pagination.pageSize
+                    Math.min(
+                        (props.table.getState().pagination.pageIndex + 1) * props.table.getState().pagination.pageSize,
+                        props.table.getRowCount(),
+                    )
                 }}
                 of {{ props.table.getRowCount() }} results
             </div>

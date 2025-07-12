@@ -1,7 +1,7 @@
 <script setup lang="ts" generic="TData">
 import type { Table } from '@tanstack/vue-table';
 import { X } from 'lucide-vue-next';
-import { ref, watch } from 'vue';
+import { computed } from 'vue';
 
 import { Button } from '@/components/ui/button';
 import DataTableFacetedFilter from './DataTableFacetedFilter.vue';
@@ -17,17 +17,9 @@ const columns = props.table.getAllColumns().filter((column) => column.getCanFilt
 
 const emit = defineEmits(['reset']);
 
-const isFiltered = ref(false);
+const isFiltered = computed(() => props.table.getState().columnFilters.length > 0 || Boolean(props.table.getState().globalFilter));
 
 const onReset = () => emit('reset');
-
-watch(
-    [() => props.table.getState().columnFilters, () => props.table.getState().globalFilter],
-    ([columnFilter, globalFilter]) => {
-        isFiltered.value = columnFilter.length > 0 || Boolean(globalFilter);
-    },
-    { immediate: true },
-);
 </script>
 
 <template>

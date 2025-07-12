@@ -62,4 +62,6 @@ export interface Paginated<T> {
     };
 }
 
+export type HandleAction = (...args: [action: 'delete' | 'restore'] | [action: 'update', column: string, payload: string]) => void;
+
 export type BreadcrumbItemType = BreadcrumbItem;

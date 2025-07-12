@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\DestroyUserRequest;
+use App\Http\Requests\RestoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
@@ -109,15 +111,21 @@ class UserController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateUserRequest $request, User $user)
+    public function update(UpdateUserRequest $request)
     {
-        $user->fill($request->validated());
+        if ($request->isMultiple()) {
+            $users = User::query()->whereIn('id', $request->ids());
+            $users->update($request->validated());
+        } else {
+            $user = User::query()->findOrFail($request->route('id'));
+            $user->fill($request->validated());
 
-        if ($user->isDirty('email')) {
-            $user->email_verified_at = null;
+            if ($user->isDirty('email')) {
+                $user->email_verified_at = null;
+            }
+
+            $user->save();
         }
-
-        $user->save();
 
         return to_route('users');
     }
@@ -125,24 +133,35 @@ class UserController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Request $request, User $user)
+    public function destroy(DestroyUserRequest $request)
     {
-        if ($request->user()->id === $user->id) {
+        $user = $request->user();
+        $ids = $request->ids();
+
+        if (in_array($user->id, $ids)) {
             abort(403);
         }
 
-        if ($user->trashed()) {
-            $user->forceDelete();
+        $trashedCount = User::query()->onlyTrashed()->whereIn('id', $ids)->count();
+
+        if ($trashedCount === count($ids)) {
+            User::query()->onlyTrashed()->whereIn('id', $ids)->forceDelete();
         } else {
-            $user->delete();
+            User::whereIn('id', $ids)->whereNull('deleted_at')->delete();
         }
 
         return to_route('users');
     }
 
-    public function restore(User $user)
+    public function restore(RestoreUserRequest $request)
     {
-        $user->restore();
+        $ids = $request->ids();
+
+        $trashedCount = User::query()->onlyTrashed()->whereIn('id', $ids)->count();
+
+        if ($trashedCount === count($ids)) {
+            User::query()->onlyTrashed()->whereIn('id', $ids)->restore();
+        }
 
         return to_route('users');
     }

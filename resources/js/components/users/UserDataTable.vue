@@ -1,14 +1,32 @@
 <script setup lang="ts">
-import { router } from '@inertiajs/vue3';
-import { ColumnDef } from '@tanstack/vue-table';
-import { computed, h, ref } from 'vue';
+import { router, usePage } from '@inertiajs/vue3';
+import {
+    ColumnDef,
+    ColumnFiltersState,
+    getCoreRowModel,
+    OnChangeFn,
+    PaginationState,
+    RowSelectionState,
+    SortingState,
+    Updater,
+    useVueTable,
+} from '@tanstack/vue-table';
+import { debounce } from 'lodash';
+import { CircleCheck, UserCog } from 'lucide-vue-next';
+import { computed, h, Ref, ref } from 'vue';
 
 import DataTable from '@/components/data-table/DataTable.vue';
+import DataTableActionBar from '@/components/data-table/DataTableActionBar.vue';
 import DataTableColumnHeader from '@/components/data-table/DataTableColumnHeader.vue';
 import DataTableDropdown from '@/components/data-table/DataTableDropdown.vue';
+import DataTablePagination from '@/components/data-table/DataTablePagination.vue';
+import DataTableToolbar from '@/components/data-table/DataTableToolbar.vue';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
 import { ROLES, STATUS } from '@/constants';
-import { Paginated, User } from '@/types';
+import { formatDate } from '@/lib/utils';
+import { HandleAction, Paginated, User } from '@/types';
 
 interface Props {
     users: Paginated<User[]>;
@@ -19,48 +37,77 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const filtersRef = ref(props.filters ?? []);
-const searchRef = ref(props.search ?? '');
-const sortingRef = ref(props.sort ?? []);
-const paginationRef = ref({ pageIndex: props.users.meta.current_page - 1, pageSize: props.users.meta.per_page });
+const columnFilters = ref(props.filters ?? []);
+const globalFilter = ref(props.search ?? '');
+const sorting = ref(props.sort ?? []);
+const pagination = ref({ pageIndex: props.users.meta.current_page - 1, pageSize: props.users.meta.per_page });
+const rowSelection = ref<{
+    [x: string]: boolean;
+}>({});
 
-const total = computed(() => props.users.meta.total);
+const selectedIds = computed(() => Object.keys(rowSelection.value));
 
-const refetch = () => {
-    const query: { search?: string; page?: number; sort?: string; filters?: string; deleted?: string } = {};
-    const search = searchRef.value;
-    const filters = filtersRef.value.filter((item) => item.id !== 'deleted_at');
-    const sort = sortingRef.value;
-    const page = paginationRef.value.pageIndex;
-    const deleted = filtersRef.value.find((item) => item.id === 'deleted_at');
+const isSelectionDeleting = ref<boolean>();
+const selectedRows = ref(new Map<string, User>());
 
-    if (search) {
-        query.search = search;
-    }
+const openDeleteDialog = ref(false);
+const openDeletePermanentlyDialog = ref(false);
+const openRestoreDialog = ref(false);
 
-    if (filters.length > 0) {
-        query.filters = JSON.stringify(filters);
-    }
-
-    if (sort.length > 0) {
-        query.sort = JSON.stringify(sort);
-    }
-
-    if (deleted && Array.isArray(deleted.value) && deleted.value.length > 0) {
-        query.deleted = deleted.value[0];
-    }
-
-    query.page = page && page + 1;
-
-    const data = Object.fromEntries(Object.entries(query).filter(([_key, value]) => Boolean(value)));
-
-    router.get(route('users'), data, {
-        preserveState: true,
-        replace: true,
-    });
-};
+const openActionDeleteDialog = ref(false);
+const openActionDeletePermanentlyDialog = ref(false);
+const openActionRestoreDialog = ref(false);
 
 const columns: ColumnDef<User>[] = [
+    {
+        id: 'select',
+        header: ({ table }) =>
+            h(Checkbox, {
+                modelValue: table.getIsAllRowsSelected() || (table.getIsSomeRowsSelected() && 'indeterminate'),
+                'onUpdate:modelValue': (value) => {
+                    const deletedFilter = columnFilters.value.find((column) => column.id === 'deleted_at')?.value;
+
+                    if (!deletedFilter) {
+                        table.toggleAllRowsSelected(!!value);
+                        return;
+                    }
+
+                    if (!Array.isArray(deletedFilter)) return;
+
+                    const filterMode = deletedFilter[0];
+
+                    if (filterMode === 'with') {
+                        if (typeof isSelectionDeleting.value === 'boolean' && isSelectionDeleting.value === false) {
+                            table.toggleAllRowsSelected(!!value);
+                            return;
+                        }
+                        isSelectionDeleting.value = true;
+                        table.toggleAllRowsSelected(!!value);
+                    }
+
+                    if (filterMode === 'only') {
+                        if (typeof isSelectionDeleting.value === 'boolean' && isSelectionDeleting.value === true) {
+                            table.toggleAllRowsSelected(!!value);
+                            return;
+                        }
+                        isSelectionDeleting.value = false;
+                        table.toggleAllRowsSelected(!!value);
+                    }
+                },
+                attrs: { 'aria-label': 'Select all' },
+                class: 'translate-y-0.5',
+            }),
+        cell: ({ row }) =>
+            h(Checkbox, {
+                modelValue: row.getIsSelected(),
+                'onUpdate:modelValue': (value) => row.toggleSelected(!!value),
+                attrs: { 'aria-label': 'Select row' },
+                class: 'translate-y-0.5',
+            }),
+        enableHiding: false,
+        enableSorting: false,
+        size: 40,
+    },
     {
         accessorKey: 'name',
         header: ({ column }) => h(DataTableColumnHeader<User, unknown>, { column, title: 'Name' }),
@@ -89,6 +136,8 @@ const columns: ColumnDef<User>[] = [
                 value: role,
             })),
             variant: 'multiSelect',
+            action: true,
+            icon: UserCog,
         },
     },
     {
@@ -109,6 +158,8 @@ const columns: ColumnDef<User>[] = [
                 value: status,
             })),
             variant: 'multiSelect',
+            action: true,
+            icon: CircleCheck,
         },
     },
     {
@@ -117,16 +168,11 @@ const columns: ColumnDef<User>[] = [
         cell: ({ cell }) => {
             const deletedAt = cell.getValue();
 
-            if (!deletedAt) {
+            if (typeof deletedAt !== 'string') {
                 return null;
             }
 
-            const date = new Date(deletedAt as string);
-            const formatted = date.toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'numeric',
-                day: 'numeric',
-            });
+            const formatted = formatDate(deletedAt);
 
             return h('div', formatted);
         },
@@ -143,42 +189,301 @@ const columns: ColumnDef<User>[] = [
     {
         id: 'actions',
         enableHiding: false,
+        enableSorting: false,
         cell: ({ row }) => {
             const { id, deleted_at } = row.original;
+            const isAuthUser = usePage().props.auth.user.id === row.original.id;
+            const isSelecting = typeof isSelectionDeleting.value === 'boolean';
             return h(
                 'div',
                 { class: 'relative' },
                 h(DataTableDropdown, {
                     id,
                     isDeleted: Boolean(deleted_at),
-                    onDelete: refetch,
-                    onRestore: refetch,
+                    isDisabled: isAuthUser || isSelecting,
+                    openDeleteDialog: openDeleteDialog.value,
+                    openDeletePermanentlyDialog: openDeletePermanentlyDialog.value,
+                    openRestoreDialog: openRestoreDialog.value,
+                    onDelete: handleDelete,
+                    onRestore: handleRestore,
                 }),
             );
         },
+        size: 40,
     },
 ];
+
+const refetch = () => {
+    const query: { search?: string; page?: number; sort?: string; filters?: string; deleted?: string } = {};
+    const search = globalFilter.value;
+    const filters = columnFilters.value.filter((item) => item.id !== 'deleted_at');
+    const sort = sorting.value;
+    const page = pagination.value.pageIndex;
+    const deleted = columnFilters.value.find((item) => item.id === 'deleted_at');
+
+    if (search) {
+        query.search = search;
+    }
+
+    if (filters.length > 0) {
+        query.filters = JSON.stringify(filters);
+    }
+
+    if (sort.length > 0) {
+        query.sort = JSON.stringify(sort);
+    }
+
+    if (deleted && Array.isArray(deleted.value) && deleted.value.length > 0) {
+        query.deleted = deleted.value[0];
+    }
+
+    query.page = page && page + 1;
+
+    const data = Object.fromEntries(Object.entries(query).filter(([_key, value]) => Boolean(value)));
+
+    router.get(route('users'), data, {
+        preserveState: true,
+        replace: true,
+    });
+};
+
+const valueUpdater = <T extends Updater<unknown>>(updaterOrValue: T, ref: Ref) => {
+    ref.value = typeof updaterOrValue === 'function' ? updaterOrValue(ref.value) : updaterOrValue;
+};
+
+const onColumnFiltersChange: OnChangeFn<ColumnFiltersState> = (updaterOrValue) => {
+    valueUpdater(updaterOrValue, columnFilters);
+    pagination.value = { pageIndex: 0, pageSize: 10 };
+    refetch();
+};
+
+const onGlobalFilterChange: OnChangeFn<any> = (updaterOrValue) => {
+    valueUpdater(updaterOrValue, globalFilter);
+    pagination.value = { pageIndex: 0, pageSize: 10 };
+    refetch();
+};
+
+const onSortingChange: OnChangeFn<SortingState> = (updaterOrValue) => {
+    valueUpdater(updaterOrValue, sorting);
+    refetch();
+};
+
+const onPaginationChange: OnChangeFn<PaginationState> = (updaterOrValue) => {
+    valueUpdater(updaterOrValue, pagination);
+    refetch();
+};
+
+const onRowSelectionChange: OnChangeFn<RowSelectionState> = (updaterOrValue) => {
+    valueUpdater(updaterOrValue, rowSelection);
+
+    const selectedIds = new Set(
+        Object.entries(rowSelection.value)
+            .filter(([_, isSelected]) => isSelected)
+            .map(([id]) => id),
+    );
+
+    selectedIds.forEach((id) => {
+        if (!selectedRows.value.has(id)) {
+            const foundRow = table.getSelectedRowModel().rows.find((row) => row.id === id);
+            if (foundRow) {
+                selectedRows.value.set(id, foundRow.original);
+            }
+        }
+    });
+
+    for (const key of selectedRows.value.keys()) {
+        if (!selectedIds.has(key)) {
+            selectedRows.value.delete(key);
+        }
+    }
+
+    if (!selectedRows.value.size) {
+        isSelectionDeleting.value = undefined;
+        return;
+    }
+
+    const firstRow = selectedRows.value.values().next().value;
+    const deleted = !!firstRow?.deleted_at;
+
+    isSelectionDeleting.value = deleted ? false : true;
+};
+
+const handleReset = () => {
+    columnFilters.value = [];
+    globalFilter.value = '';
+    pagination.value = { pageIndex: 0, pageSize: 10 };
+    refetch();
+};
+
+const handleSelectionReset = () => {
+    rowSelection.value = {};
+    isSelectionDeleting.value = undefined;
+    selectedRows.value = new Map();
+};
+
+const handleDelete = (id: string) => {
+    router.delete(route('users.destroy', id), {
+        preserveScroll: true,
+        onFinish: () => {
+            if (openDeleteDialog.value) {
+                openDeleteDialog.value = false;
+            } else if (openDeletePermanentlyDialog.value) {
+                openDeletePermanentlyDialog.value = false;
+            } else if (openActionDeleteDialog.value) {
+                openActionDeleteDialog.value = false;
+                handleSelectionReset();
+            } else if (openActionDeletePermanentlyDialog.value) {
+                openActionDeletePermanentlyDialog.value = false;
+                handleSelectionReset();
+            }
+            refetch();
+        },
+    });
+};
+
+const handleRestore = (id: string) => {
+    router.patch(route('users.restore', id), undefined, {
+        preserveScroll: true,
+        onFinish: () => {
+            if (openRestoreDialog.value) {
+                openRestoreDialog.value = false;
+            } else if (openActionRestoreDialog.value) {
+                openActionRestoreDialog.value = false;
+                handleSelectionReset();
+            }
+            refetch();
+        },
+    });
+};
+
+const handleUpdate = (ids: string, column: string, payload: string) => {
+    router.patch(
+        route('users.update', ids),
+        {
+            [column]: payload,
+        },
+        {
+            onFinish: () => {
+                handleSelectionReset();
+                refetch();
+            },
+        },
+    );
+};
+
+const handleAction: HandleAction = (...args) => {
+    const [action, column, payload] = args;
+    const ids = selectedIds.value.join(',');
+
+    switch (action) {
+        case 'delete':
+            handleDelete(ids);
+            break;
+        case 'restore':
+            handleRestore(ids);
+            break;
+        case 'update':
+            handleUpdate(ids, column, payload);
+            break;
+    }
+};
+
+const debouncedInput = debounce((value: string | number) => table.setGlobalFilter(value), 300);
+
+const table = useVueTable({
+    get data() {
+        return props.users.data;
+    },
+    get columns() {
+        return columns;
+    },
+    get rowCount() {
+        return props.users.meta.total;
+    },
+    initialState: {
+        columnVisibility: {
+            deleted_at: false,
+        },
+    },
+    state: {
+        get columnFilters() {
+            return columnFilters.value;
+        },
+        get globalFilter() {
+            return globalFilter.value;
+        },
+        get sorting() {
+            return sorting.value;
+        },
+        get pagination() {
+            return pagination.value;
+        },
+        get rowSelection() {
+            return rowSelection.value;
+        },
+    },
+    manualFiltering: true,
+    manualSorting: true,
+    manualPagination: true,
+    onColumnFiltersChange,
+    onGlobalFilterChange,
+    onSortingChange,
+    onPaginationChange,
+    onRowSelectionChange,
+    getCoreRowModel: getCoreRowModel(),
+    getRowId: (row) => String(row.id),
+    enableRowSelection: (row) => {
+        const deleted = !!row.original.deleted_at;
+        const isAuthUser = usePage().props.auth.user.id === row.original.id;
+
+        if (isAuthUser) {
+            return false;
+        }
+
+        if (isSelectionDeleting.value === true) {
+            return !deleted;
+        }
+
+        if (isSelectionDeleting.value === false) {
+            return deleted;
+        }
+
+        return true;
+    },
+});
 </script>
 
 <template>
-    <!-- <pre>{{ 'filtersRef: ' + JSON.stringify(filtersRef, null, 2) }}</pre>
-    <pre>{{ 'searchRef: ' + searchRef }}</pre>
-    <pre>{{ 'sortingRef: ' + JSON.stringify(sortingRef, null, 2) }}</pre>
-    <pre>{{ 'paginationRef: ' + JSON.stringify(paginationRef, null, 2) }}</pre> -->
+    <!-- <pre>{{ 'columnFilters: ' + JSON.stringify(columnFilters, null, 2) }}</pre> -->
+    <!-- <pre>{{ 'globalFilter: ' + globalFilter }}</pre> -->
+    <!-- <pre>{{ 'sorting: ' + JSON.stringify(sorting, null, 2) }}</pre> -->
+    <!-- <pre>{{ 'pagination: ' + JSON.stringify(pagination, null, 2) }}</pre> -->
+    <!-- <pre>{{ 'isSelectionDeleting: ' + isSelectionDeleting }}</pre> -->
+    <!-- <pre>{{ 'rowSelection: ' + JSON.stringify(rowSelection, null, 2) }}</pre> -->
+    <!-- <pre>{{ 'selectedRows: ' + JSON.stringify(Object.fromEntries(selectedRows), null, 2) }}</pre> -->
+
     <div class="container mx-auto flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
-        <DataTable
-            :columns="columns"
-            :data="props.users.data"
-            :total="total"
-            v-model:filters="filtersRef"
-            v-model:search="searchRef"
-            v-model:sort="sortingRef"
-            v-model:pagination="paginationRef"
-            @update:filters="refetch"
-            @update:search="refetch"
-            @update:sort="refetch"
-            @update:pagination="refetch"
-            @reset="refetch"
-        />
+        <DataTable :table="table">
+            <template #toolbar>
+                <DataTableToolbar :table="table" @reset="handleReset">
+                    <template #search>
+                        <Input class="h-8 w-40 lg:w-56" placeholder="Search" :model-value="globalFilter" @update:model-value="debouncedInput" />
+                    </template>
+                </DataTableToolbar>
+            </template>
+            <template #pagination>
+                <DataTablePagination :table="table" />
+            </template>
+            <template #actionBar>
+                <DataTableActionBar
+                    :table="table"
+                    :is-deleting="isSelectionDeleting"
+                    v-model:open-delete-dialog="openActionDeleteDialog"
+                    v-model:open-delete-permanently-dialog="openActionDeletePermanentlyDialog"
+                    v-model:open-restore-dialog="openActionRestoreDialog"
+                    @action="handleAction"
+                />
+            </template>
+        </DataTable>
     </div>
 </template>

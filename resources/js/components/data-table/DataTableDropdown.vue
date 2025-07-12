@@ -1,54 +1,37 @@
 <script setup lang="ts">
-import { Link, router } from '@inertiajs/vue3';
+import { Link } from '@inertiajs/vue3';
 import { MoreHorizontal } from 'lucide-vue-next';
-import { ref } from 'vue';
 
 import ConfirmDialog from '@/components/confirm-dialog/ConfirmDialog.vue';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
-const props = defineProps<{
+interface Props {
     id: number;
     isDeleted?: boolean;
-}>();
+    isDisabled?: boolean;
+}
 
-const emits = defineEmits(['delete', 'restore']);
+const props = defineProps<Props>();
 
-const openDeleteDialog = ref(false);
-const openDeletePermanentlyDialog = ref(false);
-const openRestoreDialog = ref(false);
+type Emits = {
+    delete: [id: string];
+    restore: [id: string];
+};
+
+const emits = defineEmits<Emits>();
+
+const openDeleteDialog = defineModel('openDeleteDialog', { default: false });
+const openDeletePermanentlyDialog = defineModel('openDeletePermanentlyDialog', { default: false });
+const openRestoreDialog = defineModel('openRestoreDialog', { default: false });
 
 const currentPath = route().current();
-
-const handleDelete = () => {
-    router.delete(route(`${currentPath}.destroy`, props.id), {
-        preserveScroll: true,
-        onFinish: () => {
-            if (openDeleteDialog.value) {
-                openDeleteDialog.value = false;
-            } else if (openDeletePermanentlyDialog.value) {
-                openDeletePermanentlyDialog.value = false;
-            }
-            emits('delete');
-        },
-    });
-};
-
-const handleRestore = () => {
-    router.patch(route(`${currentPath}.restore`, props.id), undefined, {
-        preserveScroll: true,
-        onFinish: () => {
-            openRestoreDialog.value = false;
-            emits('restore');
-        },
-    });
-};
 </script>
 
 <template>
     <DropdownMenu>
         <DropdownMenuTrigger as-child>
-            <Button variant="ghost" class="h-8 w-8 p-0">
+            <Button variant="ghost" class="h-8 w-8 p-0" :disabled="props.isDisabled">
                 <span class="sr-only">Open menu</span>
                 <MoreHorizontal class="h-4 w-4" />
             </Button>
@@ -72,7 +55,7 @@ const handleRestore = () => {
         title="Are you sure you want to delete?"
         description="Once deleted, all of its resources and data will also be deleted."
         variant="destructive"
-        @click="handleDelete"
+        @click="emits('delete', String(props.id))"
     />
     <ConfirmDialog
         v-model:open="openDeletePermanentlyDialog"
@@ -80,13 +63,13 @@ const handleRestore = () => {
         title="Are you sure you want to permenently delete?"
         description="Once deleted, all of its resources and data will also be permanently deleted."
         variant="destructive"
-        @click="handleDelete"
+        @click="emits('delete', String(props.id))"
     />
     <ConfirmDialog
         v-model:open="openRestoreDialog"
         confirm-text="Restore"
         title="Are you sure you want to restore?"
         description="Once restored, all of its resources and data will also be restored."
-        @click="handleRestore"
+        @click="emits('restore', String(props.id))"
     />
 </template>

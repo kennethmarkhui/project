@@ -1,74 +1,62 @@
 <script setup lang="ts">
-import { type DialogRootEmits, type DialogRootProps, useForwardPropsEmits } from 'reka-ui';
+import { useForm } from '@inertiajs/vue3';
+import { ref } from 'vue';
 
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import InputError from '@/components/InputError.vue';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useConfirmDialog } from '@/composables/useConfirmDialog';
 import ConfirmDialogContentFooter from './ConfirmDialogContentFooter.vue';
 import ConfirmDialogContentHeader from './ConfirmDialogContentHeader.vue';
 
-interface Props extends DialogRootProps {
-    confirmText?: string;
-    description?: string;
-    asButton?: boolean;
-    isDisabled?: boolean;
-    isForm?: boolean;
-    title?: string;
-    variant?: 'destructive' | 'default';
-}
+const passwordInput = ref<HTMLInputElement | null>(null);
 
-type Emits = { cancel: []; click: []; submit: [e: Event] } & DialogRootEmits;
-
-const props = withDefaults(defineProps<Props>(), {
-    confirmText: 'Confirm',
-    variant: 'default',
+const form = useForm({
+    password: '',
 });
-const emits = defineEmits<Emits>();
 
-const forwarded = useForwardPropsEmits(props, emits);
+const { isRevealed, confirm, title, description, confirmText, variant, formSubmit } = useConfirmDialog();
 
-const onCancel = () => {
-    emits('cancel');
+const onSubmit = () => {
+    if (!formSubmit.value) return;
+
+    form.submit(formSubmit.value.method, formSubmit.value.url, {
+        preserveScroll: true,
+        onSuccess: () => closeDialog(true),
+        onError: () => {
+            // TODO: passwordInput ref is not working
+            if (passwordInput.value instanceof HTMLInputElement) {
+                passwordInput.value.focus();
+            }
+        },
+        onFinish: () => form.reset(),
+    });
 };
 
-const onClick = () => {
-    emits('click');
-};
-
-const onSubmit = (e: Event) => {
-    emits('submit', e);
+const closeDialog = (confirmed: boolean) => {
+    form.clearErrors();
+    form.reset();
+    confirm(confirmed);
 };
 </script>
 
 <template>
-    <Dialog v-bind="forwarded">
-        <DialogTrigger v-if="props.asButton" as-child>
-            <Button :variant="props.variant"> {{ props.confirmText }} </Button>
-        </DialogTrigger>
+    <Dialog v-model:open="isRevealed" @update:open="(value) => value === false && confirm(false)">
         <DialogContent>
-            <form v-if="$slots.contentForm" class="space-y-6" @submit="onSubmit">
-                <ConfirmDialogContentHeader :title="props.title" :description="props.description" />
+            <ConfirmDialogContentHeader :title="title" :description="description" />
 
-                <slot name="contentForm"></slot>
+            <form v-if="formSubmit" class="space-y-6" @submit.prevent="onSubmit">
+                <div class="grid gap-2">
+                    <Label for="password" class="sr-only">Password</Label>
+                    <Input id="password" type="password" name="password" ref="passwordInput" v-model="form.password" placeholder="Password" />
+                    <InputError :message="form.errors.password" />
+                </div>
 
-                <ConfirmDialogContentFooter
-                    :confirm-text="props.confirmText"
-                    :variant="props.variant"
-                    :is-disabled="props.isDisabled"
-                    :is-form="props.isForm"
-                    @cancel="onCancel"
-                />
+                <ConfirmDialogContentFooter :confirm-text="confirmText" :is-form="!!formSubmit" :variant="variant" @cancel="closeDialog(false)" />
             </form>
 
-            <template v-else>
-                <ConfirmDialogContentHeader :title="props.title" :description="props.description" />
-
-                <ConfirmDialogContentFooter
-                    :confirm-text="props.confirmText"
-                    :variant="props.variant"
-                    :is-disabled="props.isDisabled"
-                    @click="onClick"
-                />
-            </template>
+            <ConfirmDialogContentFooter v-else :confirm-text="confirmText" :variant="variant" @cancel="confirm(false)" @click="confirm(true)" />
         </DialogContent>
     </Dialog>
 </template>

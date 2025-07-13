@@ -2,9 +2,9 @@
 import { Link } from '@inertiajs/vue3';
 import { MoreHorizontal } from 'lucide-vue-next';
 
-import ConfirmDialog from '@/components/confirm-dialog/ConfirmDialog.vue';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { useConfirmDialog } from '@/composables/useConfirmDialog';
 
 interface Props {
     id: number;
@@ -21,11 +21,41 @@ type Emits = {
 
 const emits = defineEmits<Emits>();
 
-const openDeleteDialog = defineModel('openDeleteDialog', { default: false });
-const openDeletePermanentlyDialog = defineModel('openDeletePermanentlyDialog', { default: false });
-const openRestoreDialog = defineModel('openRestoreDialog', { default: false });
-
 const currentPath = route().current();
+
+const { reveal } = useConfirmDialog();
+
+const onDelete = async () => {
+    const confirmed = await reveal({
+        title: 'Are you sure you want to delete?',
+        description: 'Once deleted, all of its resources and data will also be deleted.',
+        confirmText: 'Delete',
+        variant: 'destructive',
+    });
+
+    if (confirmed.data) emits('delete', String(props.id));
+};
+
+const onPermanentDelete = async () => {
+    const confirmed = await reveal({
+        title: 'Are you sure you want to permanently delete?',
+        description: 'Once deleted, all of its resources and data will also be permanently deleted.',
+        confirmText: 'Delete Permanently',
+        variant: 'destructive',
+    });
+
+    if (confirmed.data) emits('delete', String(props.id));
+};
+
+const onRestore = async () => {
+    const confirmed = await reveal({
+        title: 'Are you sure you want to restore?',
+        description: 'Once restored, all of its resources and data will also be restored.',
+        confirmText: 'Restore',
+    });
+
+    if (confirmed.data) emits('restore', String(props.id));
+};
 </script>
 
 <template>
@@ -42,34 +72,10 @@ const currentPath = route().current();
             </DropdownMenuItem>
 
             <template v-if="isDeleted">
-                <DropdownMenuItem @select="openRestoreDialog = true">Restore</DropdownMenuItem>
-                <DropdownMenuItem variant="destructive" @select="openDeletePermanentlyDialog = true">Delete Permanently</DropdownMenuItem>
+                <DropdownMenuItem @select="onRestore">Restore</DropdownMenuItem>
+                <DropdownMenuItem variant="destructive" @select="onPermanentDelete">Delete Permanently</DropdownMenuItem>
             </template>
-            <DropdownMenuItem v-else variant="destructive" @select="openDeleteDialog = true">Delete</DropdownMenuItem>
+            <DropdownMenuItem v-else variant="destructive" @select="onDelete">Delete</DropdownMenuItem>
         </DropdownMenuContent>
     </DropdownMenu>
-
-    <ConfirmDialog
-        v-model:open="openDeleteDialog"
-        confirm-text="Delete"
-        title="Are you sure you want to delete?"
-        description="Once deleted, all of its resources and data will also be deleted."
-        variant="destructive"
-        @click="emits('delete', String(props.id))"
-    />
-    <ConfirmDialog
-        v-model:open="openDeletePermanentlyDialog"
-        confirm-text="Delete Permanently"
-        title="Are you sure you want to permenently delete?"
-        description="Once deleted, all of its resources and data will also be permanently deleted."
-        variant="destructive"
-        @click="emits('delete', String(props.id))"
-    />
-    <ConfirmDialog
-        v-model:open="openRestoreDialog"
-        confirm-text="Restore"
-        title="Are you sure you want to restore?"
-        description="Once restored, all of its resources and data will also be restored."
-        @click="emits('restore', String(props.id))"
-    />
 </template>

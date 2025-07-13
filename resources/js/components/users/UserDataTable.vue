@@ -1,19 +1,19 @@
 <script setup lang="ts">
 import { router, usePage } from '@inertiajs/vue3';
 import {
-    ColumnDef,
-    ColumnFiltersState,
+    type ColumnDef,
+    type ColumnFiltersState,
     getCoreRowModel,
-    OnChangeFn,
-    PaginationState,
-    RowSelectionState,
-    SortingState,
-    Updater,
+    type OnChangeFn,
+    type PaginationState,
+    type RowSelectionState,
+    type SortingState,
+    type Updater,
     useVueTable,
 } from '@tanstack/vue-table';
 import { debounce } from 'lodash';
 import { CircleCheck, UserCog } from 'lucide-vue-next';
-import { computed, h, Ref, ref } from 'vue';
+import { computed, h, type Ref, ref } from 'vue';
 
 import DataTable from '@/components/data-table/DataTable.vue';
 import DataTableActionBar from '@/components/data-table/DataTableActionBar.vue';
@@ -26,7 +26,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { ROLES, STATUS } from '@/constants';
 import { formatDate } from '@/lib/utils';
-import { HandleAction, Paginated, User } from '@/types';
+import type { HandleAction, Paginated, User } from '@/types';
 
 interface Props {
     users: Paginated<User[]>;
@@ -50,14 +50,6 @@ const selectedIds = computed(() => Object.keys(rowSelection.value));
 const isSelectionDeleting = ref<boolean>();
 const selectedRows = ref(new Map<string, User>());
 
-const openDeleteDialog = ref(false);
-const openDeletePermanentlyDialog = ref(false);
-const openRestoreDialog = ref(false);
-
-const openActionDeleteDialog = ref(false);
-const openActionDeletePermanentlyDialog = ref(false);
-const openActionRestoreDialog = ref(false);
-
 const columns: ColumnDef<User>[] = [
     {
         id: 'select',
@@ -67,12 +59,7 @@ const columns: ColumnDef<User>[] = [
                 'onUpdate:modelValue': (value) => {
                     const deletedFilter = columnFilters.value.find((column) => column.id === 'deleted_at')?.value;
 
-                    if (!deletedFilter) {
-                        table.toggleAllRowsSelected(!!value);
-                        return;
-                    }
-
-                    if (!Array.isArray(deletedFilter)) return;
+                    if (!Array.isArray(deletedFilter)) return table.toggleAllRowsSelected(!!value);
 
                     const filterMode = deletedFilter[0];
 
@@ -201,9 +188,6 @@ const columns: ColumnDef<User>[] = [
                     id,
                     isDeleted: Boolean(deleted_at),
                     isDisabled: isAuthUser || isSelecting,
-                    openDeleteDialog: openDeleteDialog.value,
-                    openDeletePermanentlyDialog: openDeletePermanentlyDialog.value,
-                    openRestoreDialog: openRestoreDialog.value,
                     onDelete: handleDelete,
                     onRestore: handleRestore,
                 }),
@@ -325,17 +309,8 @@ const handleDelete = (id: string) => {
     router.delete(route('users.destroy', id), {
         preserveScroll: true,
         onFinish: () => {
-            if (openDeleteDialog.value) {
-                openDeleteDialog.value = false;
-            } else if (openDeletePermanentlyDialog.value) {
-                openDeletePermanentlyDialog.value = false;
-            } else if (openActionDeleteDialog.value) {
-                openActionDeleteDialog.value = false;
-                handleSelectionReset();
-            } else if (openActionDeletePermanentlyDialog.value) {
-                openActionDeletePermanentlyDialog.value = false;
-                handleSelectionReset();
-            }
+            handleSelectionReset();
+
             refetch();
         },
     });
@@ -345,12 +320,7 @@ const handleRestore = (id: string) => {
     router.patch(route('users.restore', id), undefined, {
         preserveScroll: true,
         onFinish: () => {
-            if (openRestoreDialog.value) {
-                openRestoreDialog.value = false;
-            } else if (openActionRestoreDialog.value) {
-                openActionRestoreDialog.value = false;
-                handleSelectionReset();
-            }
+            handleSelectionReset();
             refetch();
         },
     });
@@ -475,14 +445,7 @@ const table = useVueTable({
                 <DataTablePagination :table="table" />
             </template>
             <template #actionBar>
-                <DataTableActionBar
-                    :table="table"
-                    :is-deleting="isSelectionDeleting"
-                    v-model:open-delete-dialog="openActionDeleteDialog"
-                    v-model:open-delete-permanently-dialog="openActionDeletePermanentlyDialog"
-                    v-model:open-restore-dialog="openActionRestoreDialog"
-                    @action="handleAction"
-                />
+                <DataTableActionBar :table="table" :is-deleting="isSelectionDeleting" @action="handleAction" />
             </template>
         </DataTable>
     </div>

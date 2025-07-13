@@ -2,14 +2,11 @@
 import { DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface Props {
-    title?: string;
-    description?: string;
+    title: string;
+    description: string;
 }
 
-const props = withDefaults(defineProps<Props>(), {
-    title: 'Are you sure you want to confirm?',
-    description: 'Once confirmed, this action will be completed. Make sure you want to continue.',
-});
+const props = defineProps<Props>();
 </script>
 
 <template>

@@ -4,10 +4,10 @@ import { RotateCcw, Trash, X } from 'lucide-vue-next';
 import { AnimatePresence, motion } from 'motion-v';
 import { computed } from 'vue';
 
-import ConfirmDialog from '@/components/confirm-dialog/ConfirmDialog.vue';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { useConfirmDialog } from '@/composables/useConfirmDialog';
 import DataTableActionBarButton from './DataTableActionBarButton.vue';
 import DataTableActionBarSelect from './DataTableActionBarSelect.vue';
 
@@ -25,9 +25,7 @@ const props = defineProps<Props>();
 
 const emits = defineEmits<Emits>();
 
-const openDeleteDialog = defineModel('openDeleteDialog', { default: false });
-const openDeletePermanentlyDialog = defineModel('openDeletePermanentlyDialog', { default: false });
-const openRestoreDialog = defineModel('openRestoreDialog', { default: false });
+const { reveal } = useConfirmDialog();
 
 const show = computed(() => Object.keys(props.table.getState().rowSelection).length > 0);
 const numberSelected = computed(() => Object.keys(props.table.getState().rowSelection).length);
@@ -35,6 +33,38 @@ const numberSelected = computed(() => Object.keys(props.table.getState().rowSele
 const columns = props.table
     .getAllColumns()
     .filter((column) => column.getCanFilter() && column.columnDef.meta?.variant === 'multiSelect' && column.columnDef.meta?.action);
+
+const onDelete = async () => {
+    const confirmed = await reveal({
+        title: 'Are you sure you want to delete?',
+        description: 'Once deleted, all of its resources and data will also be deleted.',
+        confirmText: 'Delete',
+        variant: 'destructive',
+    });
+
+    if (confirmed.data) emits('action', 'delete');
+};
+
+const onPermanentDelete = async () => {
+    const confirmed = await reveal({
+        title: 'Are you sure you want to permanently delete?',
+        description: 'Once deleted, all of its resources and data will also be permanently deleted.',
+        confirmText: 'Delete Permanently',
+        variant: 'destructive',
+    });
+
+    if (confirmed.data) emits('action', 'delete');
+};
+
+const onRestore = async () => {
+    const confirmed = await reveal({
+        title: 'Are you sure you want to restore?',
+        description: 'Once restored, all of its resources and data will also be restored.',
+        confirmText: 'Restore',
+    });
+
+    if (confirmed.data) emits('action', 'restore');
+};
 
 const clearSelection = () => {
     props.table.resetRowSelection();
@@ -89,16 +119,16 @@ const clearSelection = () => {
                             <component v-if="column?.columnDef.meta?.icon" :is="column?.columnDef.meta?.icon" />
                         </DataTableActionBarSelect>
 
-                        <DataTableActionBarButton tooltip="Delete" @click="openDeleteDialog = true">
+                        <DataTableActionBarButton tooltip="Delete" @click="onDelete">
                             <Trash />
                         </DataTableActionBarButton>
                     </template>
 
                     <template v-if="props.isDeleting === false">
-                        <DataTableActionBarButton tooltip="Restore" @click="openRestoreDialog = true">
+                        <DataTableActionBarButton tooltip="Restore" @click="onRestore">
                             <RotateCcw />
                         </DataTableActionBarButton>
-                        <DataTableActionBarButton tooltip="Permanently Delete" @click="openDeletePermanentlyDialog = true">
+                        <DataTableActionBarButton tooltip="Permanently Delete" @click="onPermanentDelete">
                             <Trash />
                         </DataTableActionBarButton>
                     </template>
@@ -106,28 +136,4 @@ const clearSelection = () => {
             </motion.div>
         </AnimatePresence>
     </Teleport>
-
-    <ConfirmDialog
-        v-model:open="openDeleteDialog"
-        confirm-text="Delete"
-        title="Are you sure you want to delete?"
-        description="Once deleted, all of its resources and data will also be deleted."
-        variant="destructive"
-        @click="emits('action', 'delete')"
-    />
-    <ConfirmDialog
-        v-model:open="openDeletePermanentlyDialog"
-        confirm-text="Delete Permanently"
-        title="Are you sure you want to permenently delete?"
-        description="Once deleted, all of its resources and data will also be permanently deleted."
-        variant="destructive"
-        @click="emits('action', 'delete')"
-    />
-    <ConfirmDialog
-        v-model:open="openRestoreDialog"
-        confirm-text="Restore"
-        title="Are you sure you want to restore?"
-        description="Once restored, all of its resources and data will also be restored."
-        @click="emits('action', 'restore')"
-    />
 </template>

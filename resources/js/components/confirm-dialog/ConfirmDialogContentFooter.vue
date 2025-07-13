@@ -3,15 +3,20 @@ import { Button } from '@/components/ui/button';
 import { DialogClose, DialogFooter } from '@/components/ui/dialog';
 
 interface Props {
-    confirmText?: string;
-    variant?: 'destructive' | 'default';
+    confirmText: string;
+    variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
     isForm?: boolean;
     isDisabled?: boolean;
 }
 
-const props = withDefaults(defineProps<Props>(), { confirmText: 'Confirm', variant: 'default' });
+type Emits = {
+    cancel: [];
+    click: [];
+};
 
-const emit = defineEmits(['cancel', 'click']);
+const props = defineProps<Props>();
+
+const emit = defineEmits<Emits>();
 
 const onCancel = () => {
     if (!props.isForm) return;

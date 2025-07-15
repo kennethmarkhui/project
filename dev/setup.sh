@@ -27,7 +27,8 @@ echo "🛠 Running migrations and seeders..."
 docker-compose exec app php artisan migrate:fresh --seed
 
 echo "🔐 Setting permissions..."
-docker compose exec app sh -c "find bootstrap/cache ! -name '.gitignore' -exec chown www-data:www-data {} \; && find bootstrap/cache ! -name '.gitignore' -exec chmod 775 {} \;"
+docker compose exec app sh -c "find storage bootstrap/cache ! -name ".gitignore" -exec chown www-data:www-data {} \;"
+docker compose exec app sh -c "find storage bootstrap/cache ! -name ".gitignore" -exec chmod 775 {} \;"
 
 echo "🛑 Closing containers..."
 docker-compose down

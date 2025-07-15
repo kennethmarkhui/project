@@ -6,9 +6,11 @@ set -e
 echo "📄 Copying .env"
 cp .env.example .env
 
+export HOST_UID=$(id -u)
+export HOST_GID=$(id -g)
 
 echo "🐳 Building Docker containers..."
-docker-compose build
+docker-compose build --build-arg HOST_UID=$HOST_UID --build-arg HOST_GID=$HOST_GID
 
 echo "🚀 Starting containers..."
 docker-compose up -d
@@ -25,10 +27,6 @@ docker-compose exec app npm run build
 
 echo "🛠 Running migrations and seeders..."
 docker-compose exec app php artisan migrate:fresh --seed
-
-echo "🔐 Setting permissions..."
-docker compose exec app sh -c "find storage bootstrap/cache ! -name ".gitignore" -exec chown www-data:www-data {} \;"
-docker compose exec app sh -c "find storage bootstrap/cache ! -name ".gitignore" -exec chmod 775 {} \;"
 
 echo "🛑 Closing containers..."
 docker-compose down

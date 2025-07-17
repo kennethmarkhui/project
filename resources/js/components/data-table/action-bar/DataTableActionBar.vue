@@ -1,15 +1,14 @@
 <script setup lang="ts" generic="TData">
 import { Table } from '@tanstack/vue-table';
-import { RotateCcw, Trash, X } from 'lucide-vue-next';
+import { RotateCcw, Trash } from 'lucide-vue-next';
 import { AnimatePresence, motion } from 'motion-v';
 import { computed } from 'vue';
 
-import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useConfirmDialog } from '@/composables/useConfirmDialog';
 import DataTableActionBarButton from './DataTableActionBarButton.vue';
 import DataTableActionBarSelect from './DataTableActionBarSelect.vue';
+import DataTableActionBarSelection from './DataTableActionBarSelection.vue';
 
 interface Props {
     table: Table<TData>;
@@ -84,25 +83,11 @@ const clearSelection = () => {
                 :transition="{ duration: 0.2, ease: 'easeInOut' }"
                 class="fixed inset-x-0 bottom-6 z-50 mx-auto flex w-fit flex-wrap items-center justify-center gap-2 rounded-md border bg-background p-2 text-foreground shadow-sm"
             >
-                <!-- Rows Selected -->
-                <div class="flex h-7 items-center rounded-md border pr-1 pl-2.5">
-                    <span class="text-xs whitespace-nowrap"> {{ numberSelected }} selected </span>
-                    <Separator orientation="vertical" class="mr-1 ml-2 data-[orientation=vertical]:h-4" />
-                    <Tooltip>
-                        <TooltipTrigger as-child>
-                            <Button variant="ghost" size="icon" class="size-5" @click="clearSelection">
-                                <X class="size-3.5" />
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent
-                            :side-offset="10"
-                            class="flex items-center gap-2 border bg-accent px-2 py-1 font-semibold text-foreground dark:bg-zinc-900 [&>span]:hidden"
-                        >
-                            <p>Clear selection</p>
-                        </TooltipContent>
-                    </Tooltip>
-                </div>
-                <!-- End Rows Selected -->
+                <DataTableActionBarSelection :length="numberSelected" @clear="clearSelection">
+                    <template #popover>
+                        <slot name="popover" />
+                    </template>
+                </DataTableActionBarSelection>
 
                 <Separator orientation="vertical" class="hidden data-[orientation=vertical]:h-5 sm:block" />
 

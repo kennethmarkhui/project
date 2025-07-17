@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
 
-import UserDataTable from '@/components/users/UserDataTable.vue';
+import UserDataTable from '@/components/users/data-table/UserDataTable.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem, Paginated, User } from '@/types';
 

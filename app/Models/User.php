@@ -15,12 +15,12 @@ class User extends Authenticatable
 
     public const ROLE_ADMIN = 'admin';
     public const ROLE_STAFF = 'staff';
-    public const ROLE_STUDENT = 'student';
+    public const ROLE_BASIC = 'basic';
 
     public const ROLES = [
         self::ROLE_ADMIN,
         self::ROLE_STAFF,
-        self::ROLE_STUDENT
+        self::ROLE_BASIC
     ];
 
     public const STATUS_APPROVED = 'approved';

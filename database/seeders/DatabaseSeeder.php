@@ -28,9 +28,9 @@ class DatabaseSeeder extends Seeder
                 'status' => User::STATUS_APPROVED
             ],
             [
-                'name' => 'Student User',
-                'email' => 'student@example.com',
-                'role' => User::ROLE_STUDENT,
+                'name' => 'Basic User',
+                'email' => 'basic@example.com',
+                'role' => User::ROLE_BASIC,
                 'status' => User::STATUS_APPROVED
             ],
         ];

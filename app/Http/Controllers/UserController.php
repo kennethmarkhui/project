@@ -113,20 +113,21 @@ class UserController extends Controller
      */
     public function update(UpdateUserRequest $request)
     {
-        if ($request->isMultiple()) {
+        if ($request->isMultiple() && $request->input('from') === 'users') {
             $users = User::query()->whereIn('id', $request->ids());
             $users->update($request->validated());
-        } else {
-            $user = User::query()->findOrFail($request->route('id'));
-            $user->fill($request->validated());
 
-            if ($user->isDirty('email')) {
-                $user->email_verified_at = null;
-            }
-
-            $user->save();
+            return back();
         }
 
+        $user = User::query()->findOrFail($request->route('id'));
+        $user->fill($request->validated());
+
+        if ($user->isDirty('email')) {
+            $user->email_verified_at = null;
+        }
+
+        $user->save();
         return to_route('users');
     }
 
@@ -150,6 +151,10 @@ class UserController extends Controller
             User::whereIn('id', $ids)->whereNull('deleted_at')->delete();
         }
 
+        if ($request->input('from') === 'users') {
+            return back();
+        }
+
         return to_route('users');
     }
 
@@ -161,6 +166,10 @@ class UserController extends Controller
 
         if ($trashedCount === count($ids)) {
             User::query()->onlyTrashed()->whereIn('id', $ids)->restore();
+        }
+
+        if ($request->input('from') === 'users') {
+            return back();
         }
 
         return to_route('users');

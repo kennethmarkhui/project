@@ -4,6 +4,7 @@ import { X } from 'lucide-vue-next';
 import { computed } from 'vue';
 
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import DataTableFacetedFilter from './DataTableFacetedFilter.vue';
 import DataTableViewOptions from './DataTableViewOptions.vue';
 
@@ -11,13 +12,19 @@ interface Props {
     table: Table<TData>;
 }
 
+type Emits = {
+    reset: [];
+};
+
 const props = defineProps<Props>();
 
-const columns = props.table.getAllColumns().filter((column) => column.getCanFilter() && column.columnDef.meta);
+const emit = defineEmits<Emits>();
 
-const emit = defineEmits(['reset']);
+const searchTerm = defineModel('searchTerm', { default: '' });
 
 const isFiltered = computed(() => props.table.getState().columnFilters.length > 0 || Boolean(props.table.getState().globalFilter));
+
+const columns = props.table.getAllColumns().filter((column) => column.getCanFilter() && column.columnDef.meta);
 
 const onReset = () => emit('reset');
 </script>
@@ -25,7 +32,12 @@ const onReset = () => emit('reset');
 <template>
     <div class="flex w-full items-start justify-between gap-2 p-1">
         <div class="flex flex-1 flex-wrap items-center gap-2">
-            <slot name="search" />
+            <Input
+                class="h-8 w-40 lg:w-56"
+                placeholder="Search"
+                :model-value="searchTerm"
+                @update:model-value="(value) => table.setGlobalFilter(value)"
+            />
             <DataTableFacetedFilter
                 v-for="column in columns"
                 :key="column.id"

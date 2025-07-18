@@ -10,7 +10,7 @@ import {
     type Updater,
     useVueTable,
 } from '@tanstack/vue-table';
-import { debounce } from 'lodash';
+import { useDebounceFn } from '@vueuse/core';
 import { computed, type Ref, ref, watch } from 'vue';
 
 import DataTableActionBar from '@/components/data-table/action-bar/DataTableActionBar.vue';
@@ -18,7 +18,6 @@ import DataTableActionBarSelectionList from '@/components/data-table/action-bar/
 import DataTable from '@/components/data-table/DataTable.vue';
 import DataTablePagination from '@/components/data-table/DataTablePagination.vue';
 import DataTableToolbar from '@/components/data-table/DataTableToolbar.vue';
-import { Input } from '@/components/ui/input';
 import type { HandleAction, Paginated, User } from '@/types';
 import { getUserDataTableColumn } from './column';
 
@@ -79,11 +78,11 @@ watch(
 const columns = getUserDataTableColumn({
     authId: usePage().props.auth.user.id,
     isSelectionDeleting,
-    onDelete: () => handleDelete,
-    onRestore: () => handleRestore,
+    onDelete: (id) => handleDelete(id),
+    onRestore: (id) => handleRestore(id),
 });
 
-const refetch = () => {
+const refetch = useDebounceFn(() => {
     const query: { search?: string; page?: number; sort?: string; filters?: string; deleted?: string } = {};
     const search = globalFilter.value;
     const filters = columnFilters.value.filter((item) => item.id !== 'deleted_at');
@@ -111,11 +110,13 @@ const refetch = () => {
 
     const data = Object.fromEntries(Object.entries(query).filter(([_key, value]) => Boolean(value)));
 
-    router.get(route('users'), data, {
+    router.visit(route('users'), {
+        method: 'get',
+        data,
         preserveState: true,
         replace: true,
     });
-};
+}, 300);
 
 const valueUpdater = <T extends Updater<unknown>>(updaterOrValue: T, ref: Ref) => {
     ref.value = typeof updaterOrValue === 'function' ? updaterOrValue(ref.value) : updaterOrValue;
@@ -160,7 +161,9 @@ const handleSelectionReset = () => {
 };
 
 const handleDelete = (id: string) => {
-    router.delete(route('users.destroy', id), {
+    router.visit(route('users.destroy', id), {
+        method: 'delete',
+        data: { from: route().current() },
         preserveScroll: true,
         onFinish: () => {
             handleSelectionReset();
@@ -168,9 +171,10 @@ const handleDelete = (id: string) => {
         },
     });
 };
-
 const handleRestore = (id: string) => {
-    router.patch(route('users.restore', id), undefined, {
+    router.visit(route('users.restore', id), {
+        method: 'patch',
+        data: { from: route().current() },
         preserveScroll: true,
         onFinish: () => {
             handleSelectionReset();
@@ -180,18 +184,18 @@ const handleRestore = (id: string) => {
 };
 
 const handleUpdate = (ids: string, column: string, payload: string) => {
-    router.patch(
-        route('users.update', ids),
-        {
+    router.visit(route('users.update', ids), {
+        method: 'patch',
+        data: {
+            from: route().current(),
             [column]: payload,
         },
-        {
-            onFinish: () => {
-                handleSelectionReset();
-                refetch();
-            },
+        preserveScroll: true,
+        onFinish: () => {
+            handleSelectionReset();
+            refetch();
         },
-    );
+    });
 };
 
 const handleAction: HandleAction = (...args) => {
@@ -218,8 +222,6 @@ const onRowRemove = (key: string) => {
         return updated;
     });
 };
-
-const debouncedInput = debounce((value: string | number) => table.setGlobalFilter(value), 300);
 
 const table = useVueTable({
     get data() {
@@ -288,11 +290,7 @@ const table = useVueTable({
     <div class="container mx-auto flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
         <DataTable :table="table">
             <template #toolbar>
-                <DataTableToolbar :table="table" @reset="handleReset">
-                    <template #search>
-                        <Input class="h-8 w-40 lg:w-56" placeholder="Search" :model-value="globalFilter" @update:model-value="debouncedInput" />
-                    </template>
-                </DataTableToolbar>
+                <DataTableToolbar :table="table" v-model:search-term="globalFilter" @reset="handleReset" />
             </template>
             <template #pagination>
                 <DataTablePagination :table="table" />

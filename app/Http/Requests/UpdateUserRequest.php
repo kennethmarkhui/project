@@ -20,8 +20,24 @@ class UpdateUserRequest extends BaseUserRequest
             return [
                 'name' => ['sometimes', 'string', 'max:255'],
                 'email' => ['sometimes', 'string', 'email', 'lowercase', 'max:255'],
-                'role' => ['sometimes', 'string', 'lowercase', 'max:255', Rule::in(User::ROLES)],
-                'status' => ['sometimes', 'string', 'lowercase', 'max:255', Rule::in(User::STATUS)],
+                'role' => [
+                    'sometimes',
+                    'string',
+                    'lowercase',
+                    'max:255',
+                    Rule::in(User::ROLES),
+                    Rule::requiredIf(!$this->filled('status')),
+                    Rule::excludeIf($this->filled('status'))
+                ],
+                'status' => [
+                    'sometimes',
+                    'string',
+                    'lowercase',
+                    'max:255',
+                    Rule::in(User::STATUS),
+                    Rule::requiredIf(!$this->filled('role')),
+                    Rule::excludeIf($this->filled('role'))
+                ],
             ];
         } else {
             return [

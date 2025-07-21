@@ -113,21 +113,24 @@ class UserController extends Controller
      */
     public function update(UpdateUserRequest $request)
     {
-        if ($request->isMultiple() && $request->input('from') === 'users') {
+        if ($request->isMultiple()) {
             $users = User::query()->whereIn('id', $request->ids());
             $users->update($request->validated());
+        } else {
+            $user = User::query()->findOrFail($request->route('id'));
+            $user->fill($request->validated());
 
+            if ($user->isDirty('email')) {
+                $user->email_verified_at = null;
+            }
+
+            $user->save();
+        }
+
+        if ($request->input('from') === 'users') {
             return back();
         }
 
-        $user = User::query()->findOrFail($request->route('id'));
-        $user->fill($request->validated());
-
-        if ($user->isDirty('email')) {
-            $user->email_verified_at = null;
-        }
-
-        $user->save();
         return to_route('users');
     }
 

@@ -6,7 +6,6 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface Props {
-    length: number;
     items: Array<[string, TData]>;
 }
 
@@ -22,7 +21,7 @@ const emit = defineEmits<Emits>();
 <template>
     <Popover>
         <PopoverTrigger as-child>
-            <Button variant="link" class="p-0 text-xs font-normal whitespace-nowrap"> {{ props.length }} selected </Button>
+            <Button variant="link" class="p-0 text-xs font-normal whitespace-nowrap"> {{ props.items.length }} selected </Button>
         </PopoverTrigger>
         <PopoverContent :collision-padding="{ left: 20, right: 20 }" :side-offset="20">
             <Command>

@@ -12,7 +12,7 @@ import DataTableActionBarSelection from './DataTableActionBarSelection.vue';
 
 interface Props {
     table: Table<TData>;
-    isDeleting?: boolean;
+    isDeleted?: boolean;
 }
 
 type Emits = {
@@ -92,7 +92,16 @@ const clearSelection = () => {
                 <Separator orientation="vertical" class="hidden data-[orientation=vertical]:h-5 sm:block" />
 
                 <div class="flex items-center gap-1.5">
-                    <template v-if="props.isDeleting === true">
+                    <template v-if="props.isDeleted === true">
+                        <DataTableActionBarButton tooltip="Restore" @click="onRestore">
+                            <RotateCcw />
+                        </DataTableActionBarButton>
+                        <DataTableActionBarButton tooltip="Permanently Delete" @click="onPermanentDelete">
+                            <Trash />
+                        </DataTableActionBarButton>
+                    </template>
+
+                    <template v-if="props.isDeleted === false">
                         <DataTableActionBarSelect
                             v-for="column in columns"
                             :key="column.id"
@@ -105,15 +114,6 @@ const clearSelection = () => {
                         </DataTableActionBarSelect>
 
                         <DataTableActionBarButton tooltip="Delete" @click="onDelete">
-                            <Trash />
-                        </DataTableActionBarButton>
-                    </template>
-
-                    <template v-if="props.isDeleting === false">
-                        <DataTableActionBarButton tooltip="Restore" @click="onRestore">
-                            <RotateCcw />
-                        </DataTableActionBarButton>
-                        <DataTableActionBarButton tooltip="Permanently Delete" @click="onPermanentDelete">
                             <Trash />
                         </DataTableActionBarButton>
                     </template>

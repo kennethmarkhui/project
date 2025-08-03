@@ -104,7 +104,7 @@ const handleBulkUpdate = (column: string, payload: string) => {
         data: { [column]: payload },
         preserveScroll: true,
         onFinish: () => {
-            clearSelection;
+            clearSelection();
             emits('success');
         },
     });

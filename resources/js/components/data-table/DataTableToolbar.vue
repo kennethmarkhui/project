@@ -1,10 +1,11 @@
 <script setup lang="ts" generic="TData">
 import type { Table } from '@tanstack/vue-table';
-import { X } from 'lucide-vue-next';
+import { Plus, X } from 'lucide-vue-next';
 import { computed } from 'vue';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Link } from '@inertiajs/vue3';
 import DataTableFacetedFilter from './DataTableFacetedFilter.vue';
 import DataTableViewOptions from './DataTableViewOptions.vue';
 
@@ -33,6 +34,7 @@ const onReset = () => emit('reset');
     <div class="flex w-full items-start justify-between gap-2 p-1">
         <div class="flex flex-1 flex-wrap items-center gap-2">
             <Input
+                v-if="props.table.options.meta?.enableSearch"
                 class="h-8 w-40 lg:w-56"
                 placeholder="Search"
                 :model-value="searchTerm"
@@ -50,7 +52,23 @@ const onReset = () => emit('reset');
                 Reset
             </Button>
         </div>
+
         <div class="flex items-center gap-2">
+            <Button
+                v-if="props.table.options.meta?.can?.create"
+                as-child
+                aria-label="Create"
+                role="combobox"
+                variant="outline"
+                size="sm"
+                class="ml-auto flex h-8"
+            >
+                <Link :href="`/${route().current()}/create`">
+                    <Plus />
+                    Create
+                </Link>
+            </Button>
+
             <DataTableViewOptions :table="props.table" />
         </div>
     </div>

@@ -1,8 +1,21 @@
 import type { LucideIcon } from 'lucide-vue-next';
 import type { Config } from 'ziggy-js';
 
+export type ResourceKey = 'user' | 'role' | 'permission';
+
+export type PermissionKey = 'create' | 'read' | 'update' | 'delete' | 'force_delete' | 'restore';
+
+export type ResourcePermissions = {
+    [P in PermissionKey]?: boolean;
+};
+
+export type AppPermissions = {
+    [R in ResourceKey]?: ResourcePermissions;
+};
+
 export interface Auth {
     user: User;
+    can: AppPermissions;
 }
 
 export interface BreadcrumbItem {
@@ -30,12 +43,27 @@ export interface User {
     name: string;
     email: string;
     avatar?: string;
-    email_verified_at: string | null;
+    email_verified_at?: string | null;
     role: string;
     status: string;
-    created_at: string;
-    updated_at: string;
+    created_at?: string;
+    updated_at?: string;
     deleted_at: string | null;
+}
+
+export interface Permission {
+    id: number;
+    name: string;
+    roles?: Role[];
+    roles_count?: number;
+}
+
+export interface Role {
+    id: number;
+    name: string;
+    permissions?: Permission[];
+    permissions_count?: number;
+    users_count?: number;
 }
 
 export interface Paginated<T> {
@@ -62,6 +90,9 @@ export interface Paginated<T> {
     };
 }
 
-export type HandleAction = (...args: [action: 'delete' | 'restore'] | [action: 'update', column: string, payload: string]) => void;
-
 export type BreadcrumbItemType = BreadcrumbItem;
+
+// https://learn.microsoft.com/en-us/javascript/api/@azure/keyvault-certificates/requireatleastone?view=azure-node-latest
+export type RequireAtLeastOne<T> = {
+    [K in keyof T]-?: Required<Pick<T, K>> & Partial<Pick<T, Exclude<keyof T, K>>>;
+}[keyof T];

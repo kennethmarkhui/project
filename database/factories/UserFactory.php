@@ -2,10 +2,13 @@
 
 namespace Database\Factories;
 
+use App\Enums\RoleType;
+use App\Models\Role;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use App\Models\User;
+use Illuminate\Support\Arr;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\User>
@@ -28,11 +31,20 @@ class UserFactory extends Factory
             'name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
-            'role' => User::ROLES[mt_rand(1, 2)],
             'status' => User::STATUS[array_rand(User::STATUS)],
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
         ];
+    }
+
+    /**
+     * Configure the model factory.
+     */
+    public function configure(): static
+    {
+        return $this->afterCreating(function (User $user) {
+            $user->syncRoles(Arr::random([Role::findOrCreate(RoleType::EDITOR->value), Role::findOrCreate(RoleType::USER->value)]));
+        });
     }
 
     /**
@@ -45,6 +57,9 @@ class UserFactory extends Factory
         ]);
     }
 
+    /**
+     * Indicate that the model should be soft deleted.
+     */
     public function deleted(): static
     {
         return $this->state(fn(array $attributes) => [

@@ -1,20 +1,12 @@
 <?php
 
-namespace App\Http\Requests;
+namespace App\Http\Requests\User;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class BaseUserRequest extends FormRequest
+class BulkBaseUserRequest extends FormRequest
 {
     protected array $parsedIds = [];
-
-    /**
-     * Determine if the user is authorized to make this request.
-     */
-    public function authorize(): bool
-    {
-        return true;
-    }
 
     /**
      * Prepare the data for validation.
@@ -30,10 +22,5 @@ class BaseUserRequest extends FormRequest
     public function ids()
     {
         return $this->parsedIds;
-    }
-
-    public function isMultiple()
-    {
-        return count($this->parsedIds) > 1;
     }
 }

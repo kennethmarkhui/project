@@ -4,12 +4,12 @@ import { h } from 'vue';
 
 import DataTableColumnHeader from '@/components/data-table/DataTableColumnHeader.vue';
 import Badge from '@/components/ui/badge/Badge.vue';
-import { ROLES, STATUS } from '@/constants';
+import { STATUS } from '@/constants';
 import { formatDate } from '@/lib/utils';
-import type { User } from '@/types';
+import type { Role, User } from '@/types';
 
 const columnHelper = createColumnHelper<User>();
-export function getUserDataTableColumn() {
+export function getUserDataTableColumn(roles: Role[]) {
     return [
         columnHelper.accessor('name', {
             header: ({ column }) => h(DataTableColumnHeader<User, unknown>, { column, title: 'Name' }),
@@ -22,7 +22,7 @@ export function getUserDataTableColumn() {
         columnHelper.accessor('role', {
             header: ({ column }) => h(DataTableColumnHeader<User, unknown>, { column, title: 'Role' }),
             cell: ({ cell }) => {
-                const role = ROLES.find((role) => role === cell.getValue());
+                const role = roles.map((role) => role.name).find((role) => role === cell.getValue());
 
                 if (!role) return null;
 
@@ -31,14 +31,15 @@ export function getUserDataTableColumn() {
             enableColumnFilter: true,
             meta: {
                 label: 'Role',
-                options: ROLES.map((role) => ({
-                    label: role.charAt(0).toUpperCase() + role.slice(1),
-                    value: role,
+                options: roles.map(({ name }) => ({
+                    label: name.charAt(0).toUpperCase() + name.slice(1),
+                    value: name,
                 })),
                 variant: 'multiSelect',
                 action: true,
                 icon: UserCog,
             },
+            size: 40,
         }),
         columnHelper.accessor('status', {
             header: ({ column }) => h(DataTableColumnHeader<User, unknown>, { column, title: 'Status' }),
@@ -88,5 +89,5 @@ export function getUserDataTableColumn() {
                 variant: 'select',
             },
         }),
-    ] as Array<ColumnDef<User, unknown>>;
+    ] as ColumnDef<User, unknown>[];
 }

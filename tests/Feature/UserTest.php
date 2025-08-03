@@ -1,35 +1,50 @@
 <?php
 
+use App\Enums\PermissionType;
+use App\Enums\RoleType;
+use App\Models\Permission;
+use App\Models\Role;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia;
 
-
 test('guests are redirected to the login page', function () {
-    $response = $this->get(route('users'));
-    $response->assertRedirect(route('login'));
+    $this->get(route('users'))->assertRedirect(route('login'));
+    $this->get(route('users.edit', 1))->assertRedirect(route('login'));
+    $this->patch(route('users.update', 1))->assertRedirect(route('login'));
+    $this->patch(route('users.bulk_update', 1))->assertRedirect(route('login'));
+    $this->delete(route('users.destroy', 1))->assertRedirect(route('login'));
+    $this->delete(route('users.bulk_destroy', 1))->assertRedirect(route('login'));
+    $this->patch(route('users.restore', 1))->assertRedirect(route('login'));
+    $this->patch(route('users.bulk_restore', 1))->assertRedirect(route('login'));
+    $this->delete(route('users.force_delete', 1))->assertRedirect(route('login'));
+    $this->delete(route('users.bulk_force_delete', 1))->assertRedirect(route('login'));
 });
 
-describe('authenticated', function () {
+describe('authorized', function () {
     beforeEach(function () {
-        $this->authenticatedUser =  User::factory()->create(['name' => 'Admin', 'email' => 'admin@example.com', 'role' => 'admin']);
-        $this->actingAs($this->authenticatedUser);
-    });
-
-    test('can visit the users page', function () {
-
-        $response = $this->get(route('users'));
-        $response->assertStatus(200);
+        $this->authorizedUser = User::factory()->create();
+        foreach (PermissionType::forModel(User::class) as $permission) {
+            Permission::findOrCreate($permission->value);
+        }
+        Role::findOrCreate(RoleType::ADMIN->value)
+            ->syncPermissions(PermissionType::forModelValues(User::class));
+        $this->authorizedUser->syncRoles(RoleType::ADMIN->value);
+        $this->actingAs($this->authorizedUser);
     });
 
     describe('user list', function () {
         beforeEach(function () {
+            Role::findOrCreate(RoleType::EDITOR->value);
+            Role::findOrCreate(RoleType::USER->value);
             $this->testUsers = User::factory()->count(11)->sequence(
                 fn($sequence) => [
                     'name' => 'User ' . ($sequence->index + 1),
                     'deleted_at' => $sequence->index > 0  ? null : now(),
-                    'role' => $sequence->index > 5 ? 'basic' : 'staff'
                 ]
-            )->create();
+            )->create()->each(function ($user, $index) {
+                $role = $index > 5 ? RoleType::USER->value : RoleType::EDITOR->value;
+                $user->syncRoles($role);
+            });
         });
 
         test('can view', function () {
@@ -40,9 +55,9 @@ describe('authenticated', function () {
                     ->has('users.data', 10)
                     ->where('users.data', function ($users) {
                         if (
-                            $users[0]['id'] !== $this->authenticatedUser->id ||
-                            $users[0]['name'] !== $this->authenticatedUser->name ||
-                            $users[0]['email'] !== $this->authenticatedUser->email
+                            $users[0]['id'] !== $this->authorizedUser->id ||
+                            $users[0]['name'] !== $this->authorizedUser->name ||
+                            $users[0]['email'] !== $this->authorizedUser->email
                         ) {
                             return false;
                         }
@@ -72,16 +87,16 @@ describe('authenticated', function () {
                         ->where('id', $this->testUsers->last()->id)
                         ->where('name', $this->testUsers->last()->name)
                         ->where('email', $this->testUsers->last()->email)
-                        ->where('role', $this->testUsers->last()->role)
+                        ->where('role', $this->testUsers->last()->getRoleNames()->first())
                         ->where('status', $this->testUsers->last()->status)
                         ->where('deleted_at', $this->testUsers->last()->deleted_at))
             );
         });
 
         test('can filter', function () {
-            $filteredUsers = $this->testUsers->whereIn('role', 'basic');
+            $filteredUsers = $this->testUsers->filter->hasRole(RoleType::USER->value);
 
-            $response = $this->get(route('users', ['filters' => json_encode([['id' => 'role', 'value' => ['basic']]])]));
+            $response = $this->get(route('users', ['filters' => json_encode([['id' => 'role', 'value' => [RoleType::USER->value]]])]));
             $response->assertInertia(
                 fn(AssertableInertia $page) => $page
                     ->component('users/Index')
@@ -146,152 +161,246 @@ describe('authenticated', function () {
                         ->where('id', $this->testUsers->last()->id)
                         ->where('name', $this->testUsers->last()->name)
                         ->where('email', $this->testUsers->last()->email)
-                        ->where('role', $this->testUsers->last()->role)
+                        ->where('role', $this->testUsers->last()->getRoleNames()->first())
                         ->where('status', $this->testUsers->last()->status)
                         ->where('deleted_at', $this->testUsers->last()->deleted_at))
             );
         });
     });
 
-    describe('single operations', function () {
-        describe('non-deleted users', function () {
-            beforeEach(function () {
-                $this->nonDeletedTestUser = User::factory()->create();
-            });
+    describe('single operations non-deleted', function () {
+        beforeEach(function () {
+            $this->nonDeletedTestUser = User::factory()->create();
+        });
 
-            test('can view edit page', function () {
-                $response = $this->get(route('users.edit', $this->nonDeletedTestUser->id));
-                $response->assertInertia(fn(AssertableInertia $page) => $page
-                    ->component('users/Edit')
-                    ->has('user.data', fn(AssertableInertia $page) => $page
-                        ->where('id', $this->nonDeletedTestUser->id)
-                        ->where('name', $this->nonDeletedTestUser->name)
-                        ->where('email', $this->nonDeletedTestUser->email)
-                        ->where('role', $this->nonDeletedTestUser->role)
-                        ->where('status', $this->nonDeletedTestUser->status)
-                        ->where('deleted_at', $this->nonDeletedTestUser->deleted_at)));
-            });
+        test('can view edit page', function () {
+            $response = $this->get(route('users.edit', $this->nonDeletedTestUser->id));
+            $response->assertInertia(fn(AssertableInertia $page) => $page
+                ->component('users/Edit')
+                ->has('user', fn(AssertableInertia $page) => $page
+                    ->where('id', $this->nonDeletedTestUser->id)
+                    ->where('name', $this->nonDeletedTestUser->name)
+                    ->where('email', $this->nonDeletedTestUser->email)
+                    ->where('role', $this->nonDeletedTestUser->getRoleNames()->first())
+                    ->where('status', $this->nonDeletedTestUser->status)
+                    ->where('deleted_at', $this->nonDeletedTestUser->deleted_at)));
+        });
 
-            test('can update', function () {
-                $response = $this->patch(route('users.update', $this->nonDeletedTestUser->id), [
-                    'name' => 'updated',
-                    'email' => $this->nonDeletedTestUser->email,
-                    'role' => 'staff',
-                    'status' => 'pending'
-                ]);
-                $response->assertRedirect(route('users'));
+        test('can update', function () {
+            $response = $this->patch(route('users.update', $this->nonDeletedTestUser->id), [
+                'name' => 'updated',
+                'email' => $this->nonDeletedTestUser->email,
+                'role' => RoleType::EDITOR->value,
+                'status' => 'pending'
+            ]);
+            $response->assertRedirect(route('users'));
+
+            $oldUserToUpdateEmail = $this->nonDeletedTestUser->email;
+
+            expect($this->nonDeletedTestUser->fresh())
+                ->name->toBe('updated')
+                ->email->toBe($oldUserToUpdateEmail)
+                ->status->toBe('pending')
+                ->hasRole(RoleType::EDITOR->value)->toBeTrue();
+        });
+
+        test('updating email resets verification', function () {
+            $response = $this->patch(route('users.update', $this->nonDeletedTestUser->id), [
+                'name' => 'updated',
+                'email' => 'update@email.com',
+                'role' => RoleType::EDITOR->value,
+                'status' => 'pending'
+            ]);
+            $response->assertRedirect(route('users'));
+
+            expect($this->nonDeletedTestUser->fresh()->email_verfified_at)
+                ->toBeNull();
+        });
+
+        test('can soft delete', function () {
+            $response = $this->delete(route('users.destroy', $this->nonDeletedTestUser->id));
+            $response->assertRedirect(route('users'));
+
+            expect($this->nonDeletedTestUser->fresh()->deleted_at)
+                ->not->toBeNull();
+        });
+
+        test('cannot soft delete current user', function () {
+            $response = $this->delete(route('users.destroy', $this->authorizedUser->id));
+            $response->assertStatus(403);
+        });
+    });
+
+    describe('single operations deleted', function () {
+        beforeEach(function () {
+            $this->deletedTestUser = User::factory()->deleted()->create();
+        });
+
+        test('can permanently delete', function () {
+            $response = $this->delete(route('users.force_delete', $this->deletedTestUser->id));
+            $response->assertRedirect(route('users'));
+
+            expect($this->deletedTestUser->fresh())
+                ->toBeNull();
+        });
 
 
-                $oldUserToUpdateEmail = $this->nonDeletedTestUser->email;
+        test('can restore', function () {
+            $response = $this->patch(route('users.restore', $this->deletedTestUser->id));
+            $response->assertRedirect(route('users'));
 
-                expect($this->nonDeletedTestUser->fresh())
-                    ->name->toBe('updated')
-                    ->email->toBe($oldUserToUpdateEmail)
-                    ->role->toBe('staff')
-                    ->status->toBe('pending');
-            });
+            expect($this->deletedTestUser->fresh()->deleted_at)
+                ->toBeNull();
+        });
+    });
 
-            test('updating email resets verification', function () {
-                $response = $this->patch(route('users.update', $this->nonDeletedTestUser->id), [
-                    'name' => 'updated',
-                    'email' => 'update@email.com',
-                    'role' => 'staff',
-                    'status' => 'pending'
-                ]);
-                $response->assertRedirect(route('users'));
+    describe('bulk operations non-deleted', function () {
+        beforeEach(function () {
+            $this->nonDeletedTestUsers =  User::factory()->count(10)->create();
+            $this->nonDeletedTestUsersIds = $this->nonDeletedTestUsers->pluck('id')->implode(',');
+        });
 
-                expect($this->nonDeletedTestUser->fresh()->email_verfified_at)
-                    ->toBeNull();
-            });
+        test('can bulk update', function () {
+            $response = $this->patch(route('users.bulk_update', $this->nonDeletedTestUsersIds), [
+                'role' => RoleType::EDITOR->value,
+            ]);
+            $response->assertRedirect();
 
-            test('can soft delete', function () {
-                $response = $this->delete(route('users.destroy', $this->nonDeletedTestUser->id));
-                $response->assertRedirect(route('users'));
-
-                expect($this->nonDeletedTestUser->fresh()->deleted_at)
-                    ->not->toBeNull();
+            $this->nonDeletedTestUsers->each(function ($user) {
+                expect($user->fresh()->hasRole(RoleType::EDITOR->value))
+                    ->toBeTrue();
             });
         });
 
-        describe('deleted users', function () {
-            beforeEach(function () {
-                $this->deletedTestUser = User::factory()->deleted()->create();
-            });
+        test('can bulk soft delete', function () {
+            $response = $this->delete(route('users.bulk_destroy',  $this->nonDeletedTestUsersIds));
+            $response->assertRedirect();
 
-            test('can permanently delete', function () {
-                $response = $this->delete(route('users.destroy', $this->deletedTestUser->id));
-                $response->assertRedirect(route('users'));
-
-                expect($this->deletedTestUser->fresh())
-                    ->toBeNull();
-            });
-
-
-            test('can restore', function () {
-                $response = $this->patch(route('users.restore', $this->deletedTestUser->id));
-                $response->assertRedirect(route('users'));
-
-                expect($this->deletedTestUser->fresh()->deleted_at)
-                    ->toBeNull();
+            $this->nonDeletedTestUsers->each(function ($user) {
+                expect($user->fresh()->deleted_at)
+                    ->not->toBeNull();
             });
         });
     });
 
-    describe('bulk operations', function () {
-        describe('non-deleted users', function () {
-            beforeEach(function () {
-                $this->nonDeletedTestUsers =  User::factory()->count(10)->create();
-                $this->nonDeletedTestUsersIds = $this->nonDeletedTestUsers->pluck('id')->implode(',');
-            });
+    describe('bulk operations deleted', function () {
+        beforeEach(function () {
+            $this->deletedTestUsers = User::factory()->count(10)->deleted()->create();
+            $this->deletedTestUsersIds =  $this->deletedTestUsers->pluck('id')->implode(',');
+        });
 
-            test('can bulk update', function () {
-                $response = $this->patch(route('users.update', $this->nonDeletedTestUsersIds), [
-                    'role' => 'staff',
-                ]);
-                $response->assertRedirect();
+        test('can bulk permanently delete', function () {
+            $response = $this->delete(route('users.bulk_force_delete',  $this->deletedTestUsersIds));
+            $response->assertRedirect();
 
-                $this->nonDeletedTestUsers->each(function ($user) {
-                    expect($user->fresh()->role)
-                        ->toBe('staff');
-                });
-            });
-
-            test('can bulk soft delete', function () {
-                $response = $this->delete(route('users.destroy',  $this->nonDeletedTestUsersIds));
-                $response->assertRedirect();
-
-                $this->nonDeletedTestUsers->each(function ($user) {
-                    expect($user->fresh()->deleted_at)
-                        ->not->toBeNull();
-                });
+            $this->deletedTestUsers->each(function ($user) {
+                expect($user->fresh())
+                    ->toBeNull();
             });
         });
 
-        describe('deleted users', function () {
-            beforeEach(function () {
-                $this->deletedTestUsers = User::factory()->count(10)->deleted()->create();
-                $this->deletedTestUsersIds =  $this->deletedTestUsers->pluck('id')->implode(',');
+        test('can bulk restore', function () {
+            $response = $this->patch(route('users.bulk_restore', $this->deletedTestUsersIds));
+            $response->assertRedirect();
+
+            $this->deletedTestUsers->each(function ($user) {
+                expect($user->fresh()->deleted_at)
+                    ->toBeNull();
             });
+        });
+    });
+});
 
-            test('can bulk permanently delete', function () {
-                $response = $this->delete(route('users.destroy',  $this->deletedTestUsersIds));
-                $response->assertRedirect();
+describe('unauthorized', function () {
+    beforeEach(function () {
+        $this->unauthorizedUser = User::factory()->create();
+        Role::findOrCreate(RoleType::USER->value);
+        $this->unauthorizedUser->syncRoles(RoleType::USER->value);
+        $this->actingAs($this->unauthorizedUser);
+    });
 
-                $this->deletedTestUsers->each(function ($user) {
-                    expect($user->fresh())
-                        ->toBeNull();
-                });
-            });
+    test('cannot view the users page', function () {
 
-            test('can bulk restore', function () {
-                $response = $this->patch(route('users.restore', $this->deletedTestUsersIds));
-                $response->assertRedirect();
+        $response = $this->get(route('users'));
+        $response->assertStatus(403);
+    });
 
-                $this->deletedTestUsers->each(function ($user) {
-                    expect($user->fresh()->deleted_at)
-                        ->toBeNull();
-                });
-            });
+    describe('single operations non-deleted', function () {
+        beforeEach(function () {
+            $this->nonDeletedTestUser = User::factory()->create();
+        });
+
+        test('cannot view edit page', function () {
+            $response = $this->get(route('users.edit', $this->nonDeletedTestUser->id));
+            $response->assertStatus(403);
+        });
+
+        test('cannot update', function () {
+            $response = $this->patch(route('users.update', $this->nonDeletedTestUser->id), [
+                'name' => 'updated',
+                'email' => $this->nonDeletedTestUser->email,
+                'role' => RoleType::EDITOR->value,
+                'status' => 'pending'
+            ]);
+            $response->assertStatus(403);
+        });
+
+        test('cannot soft delete', function () {
+            $response = $this->delete(route('users.destroy', $this->nonDeletedTestUser->id));
+            $response->assertStatus(403);
+        });
+    });
+
+    describe('single operations deleted', function () {
+        beforeEach(function () {
+            $this->deletedTestUser = User::factory()->deleted()->create();
+        });
+
+        test('cannot permanently delete', function () {
+            $response = $this->delete(route('users.force_delete', $this->deletedTestUser->id));
+            $response->assertStatus(403);
+        });
+
+
+        test('cannot restore', function () {
+            $response = $this->patch(route('users.restore', $this->deletedTestUser->id));
+            $response->assertStatus(403);
+        });
+    });
+
+    describe('bulk operations non-deleted', function () {
+        beforeEach(function () {
+            $this->nonDeletedTestUsers =  User::factory()->count(10)->create();
+            $this->nonDeletedTestUsersIds = $this->nonDeletedTestUsers->pluck('id')->implode(',');
+        });
+
+        test('cannot bulk update', function () {
+            $response = $this->patch(route('users.bulk_update', $this->nonDeletedTestUsersIds), [
+                'role' => RoleType::EDITOR->value,
+            ]);
+            $response->assertStatus(403);
+        });
+
+        test('cannot bulk soft delete', function () {
+            $response = $this->delete(route('users.bulk_destroy',  $this->nonDeletedTestUsersIds));
+            $response->assertStatus(403);
+        });
+    });
+
+    describe('bulk operations deleted', function () {
+        beforeEach(function () {
+            $this->deletedTestUsers = User::factory()->count(10)->deleted()->create();
+            $this->deletedTestUsersIds =  $this->deletedTestUsers->pluck('id')->implode(',');
+        });
+
+        test('cannot bulk permanently delete', function () {
+            $response = $this->delete(route('users.bulk_force_delete',  $this->deletedTestUsersIds));
+            $response->assertStatus(403);
+        });
+
+        test('cannot bulk restore', function () {
+            $response = $this->patch(route('users.bulk_restore', $this->deletedTestUsersIds));
+            $response->assertStatus(403);
         });
     });
 });

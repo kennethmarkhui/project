@@ -1,24 +1,30 @@
 <script setup lang="ts" generic="TData extends RowData">
-import { usePage } from '@inertiajs/vue3';
+import { router } from '@inertiajs/vue3';
 import {
     type ColumnDef,
+    type ColumnFiltersState,
     createColumnHelper,
     FlexRender,
     getCoreRowModel,
+    type PaginationState,
+    type Row,
     type RowData,
+    type RowSelectionState,
+    type SortingState,
     type TableOptionsWithReactiveData,
-    type TableState,
     useVueTable,
+    type VisibilityState,
 } from '@tanstack/vue-table';
 import { useDebounceFn } from '@vueuse/core';
 import { computed, h, ref, type Ref } from 'vue';
 
 import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import type { HandleAction } from '@/types';
+import { getCommonPinningStyles } from '@/lib/utils';
+import type { RequireAtLeastOne } from '@/types';
 import DataTableActionBar from './action-bar/DataTableActionBar.vue';
 import DataTableActionBarSelectionList from './action-bar/DataTableActionBarSelectionList.vue';
-import DataTableDropdown from './DataTableDropdown.vue';
+import DataTableColumnActionDropdown from './DataTableColumnActionDropdown.vue';
 import DataTablePagination from './DataTablePagination.vue';
 import DataTableToolbar from './DataTableToolbar.vue';
 
@@ -27,36 +33,23 @@ function hasSoftDelete(row: any): row is { deleted_at?: Date | string | null } {
 }
 
 interface Props {
-    data: Array<TData>;
-    columns: Array<ColumnDef<TData, unknown>>;
-    total: number;
-    options: Partial<Pick<TableOptionsWithReactiveData<TData>, 'initialState' | 'getRowId'>>;
+    data: TData[];
+    columns: ColumnDef<TData, unknown>[];
+    total?: number;
+    options?: RequireAtLeastOne<Partial<Pick<TableOptionsWithReactiveData<TData>, 'initialState' | 'getRowId' | 'enableRowSelection' | 'meta'>>>;
 }
-
-type Emits = {
-    delete: [id: string];
-    restore: [id: string];
-    bulkDelete: [ids: string];
-    bulkRestore: [ids: string];
-    bulkUpdate: [ids: string, column: string, payload: string];
-    change: [state: TableState];
-};
 
 const props = defineProps<Props>();
 
-const emits = defineEmits<Emits>();
-
-const columnFilters = ref(props.options.initialState?.columnFilters ?? []);
-const globalFilter = ref(props.options.initialState?.globalFilter ?? '');
-const sorting = ref(props.options.initialState?.sorting ?? []);
-const pagination = ref({
-    pageIndex: props.options.initialState?.pagination?.pageIndex ?? 0,
-    pageSize: props.options.initialState?.pagination?.pageSize ?? 10,
+const columnFilters = ref<ColumnFiltersState>(props.options?.initialState?.columnFilters ?? []);
+const globalFilter = ref<string>(props.options?.initialState?.globalFilter ?? '');
+const sorting = ref<SortingState>(props.options?.initialState?.sorting ?? []);
+const pagination = ref<PaginationState>({
+    pageIndex: props.options?.initialState?.pagination?.pageIndex ?? 0,
+    pageSize: props.options?.initialState?.pagination?.pageSize ?? 10,
 });
-const rowSelection = ref<{
-    [x: string]: boolean;
-}>({});
-const columnVisibility = ref(props.options.initialState?.columnVisibility ?? {});
+const rowSelection = ref<RowSelectionState>({});
+const columnVisibility = ref<VisibilityState>(props.options?.initialState?.columnVisibility ?? {});
 
 const selectedRows: Ref<Map<string, TData>> = ref(new Map());
 const selectedIds = computed(() => Object.keys(rowSelection.value));
@@ -67,6 +60,18 @@ const isDeletedSelection = computed(() => {
     if (!hasSoftDelete(first)) return undefined;
     return !!first?.deleted_at;
 });
+
+const isRowSelectionEnabled = (row: Row<TData>): boolean => {
+    const enableRowSelection = props.options?.enableRowSelection;
+
+    if (typeof enableRowSelection === 'boolean') {
+        return enableRowSelection;
+    }
+    if (typeof enableRowSelection === 'function') {
+        return enableRowSelection(row);
+    }
+    return true;
+};
 
 const columnHelper = createColumnHelper<TData>();
 
@@ -101,18 +106,19 @@ const selectionColumn = columnHelper.display({
 
 const actionColumn = columnHelper.display({
     id: 'actions',
-    cell: ({ row }) => {
-        const isAuthUser = usePage().props.auth.user.id === Number(row.id);
+    cell: ({ row, table }) => {
+        const isRowDisabled = !isRowSelectionEnabled(row);
         const isDeleted = hasSoftDelete(row.original) ? Boolean(row.original.deleted_at) : undefined;
+
         return h(
             'div',
             { class: 'relative' },
-            h(DataTableDropdown, {
+            h(DataTableColumnActionDropdown, {
                 id: Number(row.id),
                 isDeleted,
-                isDisabled: isAuthUser || hasSelection.value,
-                onDelete: (id) => emits('delete', id),
-                onRestore: (id) => emits('restore', id),
+                isDisabled: isRowDisabled || hasSelection.value,
+                tableMeta: table.options.meta,
+                onSuccess: () => refetch(),
             }),
         );
     },
@@ -122,7 +128,16 @@ const actionColumn = columnHelper.display({
 });
 
 const tableColumns = computed(() => {
-    return [selectionColumn, ...props.columns, actionColumn];
+    const meta = props.options?.meta;
+
+    const showActionColumn = meta?.can?.update || meta?.can?.delete || meta?.can?.force_delete || meta?.can?.restore;
+    const columns: ColumnDef<TData, unknown>[] = [
+        ...(props.options?.enableRowSelection ? [selectionColumn] : []),
+        ...props.columns,
+        ...(showActionColumn ? [actionColumn] : []),
+    ];
+
+    return columns.filter(Boolean);
 });
 
 const tableOptions = computed<TableOptionsWithReactiveData<TData>>(() => {
@@ -141,6 +156,9 @@ const tableOptions = computed<TableOptionsWithReactiveData<TData>>(() => {
         initialState: {
             get columnVisibility() {
                 return columnVisibility.value;
+            },
+            get columnPinning() {
+                return { right: ['actions'] };
             },
         },
 
@@ -203,25 +221,68 @@ const tableOptions = computed<TableOptionsWithReactiveData<TData>>(() => {
             }
         },
 
-        getRowId: props.options.getRowId,
+        getRowId: props.options?.getRowId,
         enableRowSelection: (row) => {
-            const isAuthUser = usePage().props.auth.user.id === Number(row.id);
-            if (isAuthUser) return false;
+            if (!isRowSelectionEnabled(row)) return false;
 
-            if (!hasSoftDelete(row.original)) return true;
-            const deleted = !!row.original.deleted_at;
-            if (isDeletedSelection.value === true) return deleted;
-            if (isDeletedSelection.value === false) return !deleted;
+            if (hasSoftDelete(row.original)) {
+                const isDeleted = !!row.original.deleted_at;
+                if (isDeletedSelection.value === true && !isDeleted) return false;
+                if (isDeletedSelection.value === false && isDeleted) return false;
+            }
 
             return true;
         },
+
+        meta: props.options?.meta,
     };
 });
 
 const table = useVueTable(tableOptions.value);
 
+const buildQuery = () => {
+    const query: { search?: string; page?: number; sort?: string; filters?: string; deleted?: string } = {};
+    const search = globalFilter.value;
+    const filters = columnFilters.value.filter((item) => item.id !== 'deleted_at');
+    const sort = sorting.value;
+    const page = pagination.value.pageIndex;
+    const deleted = columnFilters.value.find((item) => item.id === 'deleted_at');
+
+    if (search) {
+        query.search = search;
+    }
+
+    if (Array.isArray(filters) && filters.length > 0) {
+        query.filters = JSON.stringify(filters);
+    }
+
+    if (Array.isArray(sort) && sort.length > 0) {
+        query.sort = JSON.stringify(sort);
+    }
+
+    if (deleted && Array.isArray(deleted.value) && deleted.value.length > 0) {
+        query.deleted = deleted.value[0];
+    }
+
+    query.page = page && page + 1;
+
+    return Object.fromEntries(Object.entries(query).filter(([_key, value]) => Boolean(value)));
+};
+
+const currentRoute = route().current();
+const refetch = () => {
+    if (!currentRoute) return;
+
+    router.visit(currentRoute, {
+        method: 'get',
+        data: buildQuery(),
+        preserveState: true,
+        replace: true,
+    });
+};
+
 const onChange = useDebounceFn(() => {
-    emits('change', table.getState());
+    refetch();
 }, 300);
 
 const onReset = () => {
@@ -231,27 +292,6 @@ const onReset = () => {
     onChange();
 };
 
-const onResetSelection = () => {
-    rowSelection.value = {};
-};
-
-const onAction: HandleAction = (...args) => {
-    const [action, column, payload] = args;
-    const ids = selectedIds.value.join(',');
-
-    switch (action) {
-        case 'delete':
-            emits('bulkDelete', ids);
-            break;
-        case 'restore':
-            emits('bulkRestore', ids);
-            break;
-        case 'update':
-            emits('bulkUpdate', ids, column, payload);
-            break;
-    }
-};
-
 const onRemoveRow = (key: string) => {
     table.setRowSelection((prev) => {
         const updated = { ...prev };
@@ -259,8 +299,6 @@ const onRemoveRow = (key: string) => {
         return updated;
     });
 };
-
-defineExpose({ onResetSelection });
 </script>
 
 <template>
@@ -271,7 +309,11 @@ defineExpose({ onResetSelection });
             <Table>
                 <TableHeader>
                     <TableRow v-for="headerGroup in table.getHeaderGroups()" :key="headerGroup.id">
-                        <TableHead v-for="header in headerGroup.headers" :key="header.id">
+                        <TableHead
+                            v-for="header in headerGroup.headers"
+                            :key="header.id"
+                            :style="{ ...getCommonPinningStyles({ column: header.column }) }"
+                        >
                             <FlexRender v-if="!header.isPlaceholder" :render="header.column.columnDef.header" :props="header.getContext()" />
                         </TableHead>
                     </TableRow>
@@ -279,7 +321,11 @@ defineExpose({ onResetSelection });
                 <TableBody>
                     <template v-if="table.getRowModel().rows?.length">
                         <TableRow v-for="row in table.getRowModel().rows" :key="row.id" :data-state="row.getIsSelected() ? 'selected' : undefined">
-                            <TableCell v-for="cell in row.getVisibleCells()" :key="cell.id">
+                            <TableCell
+                                v-for="cell in row.getVisibleCells()"
+                                :key="cell.id"
+                                :style="{ ...getCommonPinningStyles({ column: cell.column }) }"
+                            >
                                 <FlexRender :render="cell.column.columnDef.cell" :props="cell.getContext()" />
                             </TableCell>
                         </TableRow>
@@ -293,11 +339,11 @@ defineExpose({ onResetSelection });
             </Table>
         </div>
 
-        <div :v-if="$slots.pagination" class="flex items-center justify-end space-x-2 p-1">
+        <div v-if="props.options?.initialState?.pagination" class="flex items-center justify-end space-x-2 p-1">
             <DataTablePagination :table="table" />
         </div>
 
-        <DataTableActionBar :table="table" :is-deleted="isDeletedSelection" @action="onAction">
+        <DataTableActionBar :table="table" :is-deleted="isDeletedSelection" @success="() => refetch()">
             <template #popover>
                 <DataTableActionBarSelectionList :items="Array.from(selectedRows)" @remove="onRemoveRow">
                     <template #default="{ item }">

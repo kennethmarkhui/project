@@ -31,7 +31,7 @@ const handleRestore = async () => {
                 <p class="text-sm">Restoring will reactivate this user, allowing changes to be made again.</p>
             </div>
 
-            <Button @click="handleRestore">Restore User</Button>
+            <Button variant="outline" @click="handleRestore">Restore User</Button>
         </div>
     </div>
 </template>

@@ -1,0 +1,33 @@
+<?php
+
+namespace Database\Seeders;
+
+use App\Enums\RoleType;
+use App\Models\User;
+use Illuminate\Database\Seeder;
+
+class UserSeeder extends Seeder
+{
+    /**
+     * Run the database seeds.
+     */
+    public function run(): void
+    {
+        $users = array_map(
+            fn($role) =>
+            [
+                'name' => $role,
+                'email' => $role . '@example.com',
+                'status' => User::STATUS_APPROVED
+            ],
+            RoleType::values()
+        );
+
+        foreach ($users as $user) {
+            $userModel = User::factory()->create($user);
+            $userModel->syncRoles($user['name']);
+        }
+
+        User::factory(100)->create();
+    }
+}

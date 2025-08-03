@@ -9,17 +9,14 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import DeleteUser from '@/components/users/DeleteUser.vue';
 import RestoreUser from '@/components/users/RestoreUser.vue';
-import { ROLES, STATUS } from '@/constants';
+import { STATUS } from '@/constants';
 import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem, User } from '@/types';
 
 interface Props {
-    user: {
-        data: User;
-    };
+    user: User;
+    roles: string[];
 }
-
-const props = defineProps<Props>();
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -32,25 +29,28 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-const isDeleted = Boolean(props.user.data.deleted_at);
+const props = defineProps<Props>();
+
+const isDeleted = Boolean(props.user.deleted_at);
 
 const form = useForm({
-    name: props.user.data.name,
-    email: props.user.data.email,
-    role: props.user.data.role,
-    status: props.user.data.status,
+    name: props.user.name,
+    email: props.user.email,
+    role: props.user.role,
+    status: props.user.status,
 });
 
 const submit = () => {
     if (!form.isDirty) return;
 
-    form.patch(route('users.update', props.user.data.id));
+    form.patch(route('users.update', props.user.id));
 };
 </script>
 
 <template>
-    <Head title="Edit User" />
     <AppLayout :breadcrumbs="breadcrumbs">
+        <Head title="Edit User" />
+
         <div class="space-y-12 px-4 py-6">
             <Heading
                 title="Edit User Profile"
@@ -78,7 +78,7 @@ const submit = () => {
                                 <SelectValue placeholder="Select a role" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem v-for="role in ROLES" :key="role" :value="role" class="capitalize">{{ role }}</SelectItem>
+                                <SelectItem v-for="role in props.roles" :key="role" :value="role" class="capitalize">{{ role }}</SelectItem>
                             </SelectContent>
                         </Select>
                         <InputError :message="form.errors.role" />
@@ -102,15 +102,16 @@ const submit = () => {
             </div>
 
             <template v-if="isDeleted">
-                <RestoreUser :id="props.user.data.id" />
+                <RestoreUser v-if="$page.props.auth.can.user?.restore" :id="props.user.id" />
                 <DeleteUser
-                    :id="props.user.data.id"
+                    v-if="$page.props.auth.can.user?.force_delete"
+                    :id="props.user.id"
                     confirm-text="Delete Permanently"
                     dialog-title="Are you sure you want to delete the user permanently?"
                     dialog-description="Once the user is deleted, all of its resources and data will also be permanently deleted."
                 />
             </template>
-            <DeleteUser v-else :id="props.user.data.id" />
+            <DeleteUser v-if="!isDeleted && $page.props.auth.can.user?.delete" :id="props.user.id" />
         </div>
     </AppLayout>
 </template>

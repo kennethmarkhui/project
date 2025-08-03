@@ -1,12 +1,13 @@
 <script setup lang="ts" generic="TData">
+import { router } from '@inertiajs/vue3';
 import { Table } from '@tanstack/vue-table';
 import { RotateCcw, Trash } from 'lucide-vue-next';
 import { AnimatePresence, motion } from 'motion-v';
 import { computed } from 'vue';
 
+import TooltipButton from '@/components/TooltipButton.vue';
 import { Separator } from '@/components/ui/separator';
 import { useConfirmDialog } from '@/composables/useConfirmDialog';
-import DataTableActionBarButton from './DataTableActionBarButton.vue';
 import DataTableActionBarSelect from './DataTableActionBarSelect.vue';
 import DataTableActionBarSelection from './DataTableActionBarSelection.vue';
 
@@ -16,8 +17,7 @@ interface Props {
 }
 
 type Emits = {
-    (e: 'action', action: 'update', column: string, payload: string): void;
-    (e: 'action', action: 'delete' | 'restore'): void;
+    success: [];
 };
 
 const props = defineProps<Props>();
@@ -28,12 +28,16 @@ const { reveal } = useConfirmDialog();
 
 const show = computed(() => Object.keys(props.table.getState().rowSelection).length > 0);
 const numberSelected = computed(() => Object.keys(props.table.getState().rowSelection).length);
+const ids = computed(() => Object.keys(props.table.getState().rowSelection).join(','));
 
 const columns = props.table
     .getAllColumns()
     .filter((column) => column.getCanFilter() && column.columnDef.meta?.variant === 'multiSelect' && column.columnDef.meta?.action);
 
-const onDelete = async () => {
+const currentRoute = route().current();
+const can = props.table.options.meta?.can;
+
+const handleBulkDelete = async () => {
     const confirmed = await reveal({
         title: 'Are you sure you want to delete?',
         description: 'Once deleted, all of its resources and data will also be deleted.',
@@ -41,10 +45,19 @@ const onDelete = async () => {
         variant: 'destructive',
     });
 
-    if (confirmed.data) emits('action', 'delete');
+    if (!confirmed.data || !currentRoute || !can?.delete) return;
+
+    router.visit(`/${currentRoute}/${ids.value}/bulk-delete`, {
+        method: 'delete',
+        preserveScroll: true,
+        onSuccess: () => {
+            clearSelection();
+            emits('success');
+        },
+    });
 };
 
-const onPermanentDelete = async () => {
+const handleBulkPermanentDelete = async () => {
     const confirmed = await reveal({
         title: 'Are you sure you want to permanently delete?',
         description: 'Once deleted, all of its resources and data will also be permanently deleted.',
@@ -52,17 +65,49 @@ const onPermanentDelete = async () => {
         variant: 'destructive',
     });
 
-    if (confirmed.data) emits('action', 'delete');
+    if (!confirmed.data || !currentRoute || !can?.force_delete) return;
+
+    router.visit(`/${currentRoute}/${ids.value}/bulk-force-delete`, {
+        method: 'delete',
+        preserveScroll: true,
+        onSuccess: () => {
+            clearSelection();
+            emits('success');
+        },
+    });
 };
 
-const onRestore = async () => {
+const handleBulkRestore = async () => {
     const confirmed = await reveal({
         title: 'Are you sure you want to restore?',
         description: 'Once restored, all of its resources and data will also be restored.',
         confirmText: 'Restore',
     });
 
-    if (confirmed.data) emits('action', 'restore');
+    if (!confirmed.data || !currentRoute || !can?.restore) return;
+
+    router.visit(`/${currentRoute}/${ids.value}/bulk-restore`, {
+        method: 'patch',
+        preserveScroll: true,
+        onSuccess: () => {
+            clearSelection();
+            emits('success');
+        },
+    });
+};
+
+const handleBulkUpdate = (column: string, payload: string) => {
+    if (!can?.update) return;
+
+    router.visit(`/${currentRoute}/${ids.value}/bulk-update`, {
+        method: 'patch',
+        data: { [column]: payload },
+        preserveScroll: true,
+        onFinish: () => {
+            clearSelection;
+            emits('success');
+        },
+    });
 };
 
 const clearSelection = () => {
@@ -93,29 +138,31 @@ const clearSelection = () => {
 
                 <div class="flex items-center gap-1.5">
                     <template v-if="props.isDeleted === true">
-                        <DataTableActionBarButton tooltip="Restore" @click="onRestore">
+                        <TooltipButton v-if="can?.restore" tooltip="Restore" variant="secondary" @click="handleBulkRestore">
                             <RotateCcw />
-                        </DataTableActionBarButton>
-                        <DataTableActionBarButton tooltip="Permanently Delete" @click="onPermanentDelete">
+                        </TooltipButton>
+                        <TooltipButton v-if="can?.force_delete" tooltip="Permanently Delete" variant="secondary" @click="handleBulkPermanentDelete">
                             <Trash />
-                        </DataTableActionBarButton>
+                        </TooltipButton>
                     </template>
 
                     <template v-if="props.isDeleted === false">
-                        <DataTableActionBarSelect
-                            v-for="column in columns"
-                            :key="column.id"
-                            :column="column"
-                            :tooltip="`Update ${column.id}`"
-                            :is-disabled="numberSelected < 2"
-                            @select="(value) => emits('action', 'update', column.id, value)"
-                        >
-                            <component v-if="column?.columnDef.meta?.icon" :is="column?.columnDef.meta?.icon" />
-                        </DataTableActionBarSelect>
+                        <template v-if="can?.update">
+                            <DataTableActionBarSelect
+                                v-for="column in columns"
+                                :key="column.id"
+                                :column="column"
+                                :tooltip="`Update ${column.id}`"
+                                :is-disabled="numberSelected < 2"
+                                @select="(value) => handleBulkUpdate(column.id, value)"
+                            >
+                                <component v-if="column?.columnDef.meta?.icon" :is="column?.columnDef.meta?.icon" />
+                            </DataTableActionBarSelect>
+                        </template>
 
-                        <DataTableActionBarButton tooltip="Delete" @click="onDelete">
+                        <TooltipButton v-if="can?.delete" tooltip="Delete" variant="secondary" @click="handleBulkDelete">
                             <Trash />
-                        </DataTableActionBarButton>
+                        </TooltipButton>
                     </template>
                 </div>
             </motion.div>

@@ -19,7 +19,7 @@ const columns = props.table.getAllColumns().filter((column) => typeof column.acc
 <template>
     <Popover>
         <PopoverTrigger :as-child="true">
-            <Button aria-label="Toggle columns" role="combobox" variant="outline" size="sm" class="ml-auto hidden h-8 lg:flex">
+            <Button aria-label="Toggle columns" role="combobox" variant="outline" size="sm" class="ml-auto flex h-8">
                 <Settings2 />
                 View
                 <ChevronsUpDown class="ml-auto opacity-50" />

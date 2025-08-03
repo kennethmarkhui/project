@@ -1,11 +1,13 @@
 <script setup lang="ts">
+import { Link, usePage } from '@inertiajs/vue3';
+import { BookOpen, Folder, LayoutGrid, UserCog, UserLock, Users } from 'lucide-vue-next';
+import { computed } from 'vue';
+
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
-import { type NavItem } from '@/types';
-import { Link } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid, Users } from 'lucide-vue-next';
+import { ResourceKey, type NavItem } from '@/types';
 import AppLogo from './AppLogo.vue';
 
 const mainNavItems: NavItem[] = [
@@ -18,6 +20,16 @@ const mainNavItems: NavItem[] = [
         title: 'Users',
         href: '/users',
         icon: Users,
+    },
+    {
+        title: 'Roles',
+        href: '/roles',
+        icon: UserCog,
+    },
+    {
+        title: 'Permissions',
+        href: '/permissions',
+        icon: UserLock,
     },
 ];
 
@@ -33,6 +45,19 @@ const footerNavItems: NavItem[] = [
         icon: BookOpen,
     },
 ];
+
+const page = usePage();
+
+const filteredNavItems = computed(() => {
+    return mainNavItems.filter((item) => {
+        if (item.href === '/dashboard') return true;
+
+        // regex for '/' start of the string and 's' end of the string
+        const singularPath = item.href.replace(/^\/|s$/g, '');
+
+        return page.props.auth.can[singularPath as ResourceKey]?.read;
+    });
+});
 </script>
 
 <template>
@@ -50,7 +75,7 @@ const footerNavItems: NavItem[] = [
         </SidebarHeader>
 
         <SidebarContent>
-            <NavMain :items="mainNavItems" />
+            <NavMain :items="filteredNavItems" />
         </SidebarContent>
 
         <SidebarFooter>

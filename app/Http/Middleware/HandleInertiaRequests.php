@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Http\Resources\UserResource;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -44,7 +45,19 @@ class HandleInertiaRequests extends Middleware
             'name' => config('app.name'),
             'quote' => ['message' => trim($message), 'author' => trim($author)],
             'auth' => [
-                'user' => $request->user(),
+                'user' => $request->user() ? new UserResource($request->user()) : null,
+                'can' => $request->user()?->getPermissionsViaRoles()
+                    ->pluck('name')
+                    ->filter(fn($name) => str_contains($name, '.'))
+                    ->groupBy(fn($name) => explode('.', $name)[0])
+                    ->map(function ($permissions, $resource) use ($request) {
+                        return $permissions
+                            ->mapWithKeys(function ($fullPermission) use ($request) {
+                                $action = explode('.', $fullPermission)[1];
+                                return [$action => $request->user()->can($fullPermission)];
+                            });
+                    })
+                    ->toArray() ?? [],
             ],
             'ziggy' => [
                 ...(new Ziggy)->toArray(),

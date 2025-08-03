@@ -3,13 +3,14 @@ import { Head } from '@inertiajs/vue3';
 
 import UserDataTable from '@/components/users/data-table/UserDataTable.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
-import type { BreadcrumbItem, Paginated, User } from '@/types';
+import type { BreadcrumbItem, Paginated, Role, User } from '@/types';
 
 interface Props {
     users: Paginated<User[]>;
     filters: Array<{ id: string; value: unknown }> | null;
     search: string | null;
     sort: Array<{ id: string; desc: boolean }> | null;
+    roles: Role[];
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -23,9 +24,11 @@ const props = defineProps<Props>();
 </script>
 
 <template>
-    <Head title="Users" />
-
     <AppLayout :breadcrumbs="breadcrumbs">
-        <UserDataTable :users="props.users" :filters="props.filters" :search="props.search" :sort="props.sort" />
+        <Head title="Users" />
+
+        <div class="container mx-auto flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
+            <UserDataTable :users="props.users" :filters="props.filters" :search="props.search" :sort="props.sort" :roles="props.roles" />
+        </div>
     </AppLayout>
 </template>

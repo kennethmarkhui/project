@@ -7,21 +7,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, SoftDeletes;
-
-    public const ROLE_ADMIN = 'admin';
-    public const ROLE_STAFF = 'staff';
-    public const ROLE_BASIC = 'basic';
-
-    public const ROLES = [
-        self::ROLE_ADMIN,
-        self::ROLE_STAFF,
-        self::ROLE_BASIC
-    ];
+    use HasFactory, Notifiable, SoftDeletes, HasRoles;
 
     public const STATUS_APPROVED = 'approved';
     public const STATUS_DENIED = 'denied';
@@ -42,7 +33,6 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'role',
         'status'
     ];
 

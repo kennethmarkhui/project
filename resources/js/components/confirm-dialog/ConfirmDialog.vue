@@ -42,7 +42,7 @@ const closeDialog = (confirmed: boolean) => {
 </script>
 
 <template>
-    <Dialog v-model:open="isRevealed" @update:open="(value) => value === false && confirm(false)">
+    <Dialog v-model:open="isRevealed" @update:open="(value) => value === false && closeDialog(value)">
         <DialogContent>
             <ConfirmDialogContentHeader :title="title" :description="description" />
 

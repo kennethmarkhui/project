@@ -2,9 +2,9 @@
 import { Column } from '@tanstack/vue-table';
 import { ref } from 'vue';
 
+import TooltipButton from '@/components/TooltipButton.vue';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import DataTableActionBarButton from './DataTableActionBarButton.vue';
 
 interface Props {
     column?: Column<TData, TValue>;
@@ -32,9 +32,9 @@ const onSelect = (value: string) => {
 <template>
     <Popover :open="open" @update:open="(value) => (open = value)">
         <PopoverTrigger as-child>
-            <DataTableActionBarButton :tooltip="props.tooltip" :disabled="props.isDisabled">
+            <TooltipButton :tooltip="props.tooltip" :disabled="props.isDisabled" variant="secondary">
                 <slot />
-            </DataTableActionBarButton>
+            </TooltipButton>
         </PopoverTrigger>
         <PopoverContent class="w-40 p-0" align="start">
             <Command>

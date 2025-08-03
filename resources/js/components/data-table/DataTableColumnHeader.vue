@@ -80,5 +80,5 @@ const onReset = () => {
         </DropdownMenuContent>
     </DropdownMenu>
 
-    <div v-else-if="!props.column.getCanSort() && !props.column.getCanHide()">{{ props.title }}</div>
+    <div v-else-if="!props.column.getCanSort()">{{ props.title }}</div>
 </template>

@@ -4,7 +4,7 @@ import { LucideIcon } from 'lucide-vue-next';
 import { ResourcePermissions } from '.';
 
 declare module '@tanstack/vue-table' {
-    interface ColumnMeta<TData extends RowData, TValue> {
+    interface ColumnMeta {
         label?: string;
         options?: Option[];
         variant?: 'multiSelect' | 'select';
@@ -12,7 +12,7 @@ declare module '@tanstack/vue-table' {
         icon?: LucideIcon;
     }
 
-    interface TableMeta<TData extends RowData> {
+    interface TableMeta {
         can?: ResourcePermissions;
         enableSearch?: boolean;
     }

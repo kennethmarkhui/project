@@ -93,7 +93,7 @@ const handleDelete = async () => {
 };
 
 const submit = () => {
-    if (!isFormDirty) return;
+    if (!isFormDirty.value) return;
 
     form.patch(route('roles.update', props.role.id), {
         onError: (errors) => {

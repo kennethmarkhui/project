@@ -29,6 +29,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/roles', [RoleController::class, 'index'])->name('roles');
     Route::get('/roles/create', [RoleController::class, 'create'])->name('roles.create');
     Route::post('/roles/create', [RoleController::class, 'store'])->name('roles.store');
+    Route::get('/roles/{role}', [RoleController::class, 'show'])->name('roles.show');
     Route::get('/roles/{role}/edit', [RoleController::class, 'edit'])->name('roles.edit');
     Route::patch('/roles/{role}/update', [RoleController::class, 'update'])->name('roles.update');
     Route::delete('/roles/{role}/delete', [RoleController::class, 'destroy'])->name('roles.destroy');

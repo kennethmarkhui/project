@@ -49,6 +49,7 @@ export interface User {
     created_at?: string;
     updated_at?: string;
     deleted_at: string | null;
+    can?: ResourcePermissions;
 }
 
 export interface Permission {
@@ -61,6 +62,8 @@ export interface Permission {
 export interface Role {
     id: number;
     name: string;
+    is_system?: boolean;
+    can?: ResourcePermissions;
     permissions?: Permission[];
     permissions_count?: number;
     users_count?: number;

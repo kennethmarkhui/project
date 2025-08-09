@@ -1,6 +1,6 @@
-<script setup lang="ts" generic="TData">
+<script setup lang="ts" generic="TData extends RowData">
 import { router } from '@inertiajs/vue3';
-import { Table } from '@tanstack/vue-table';
+import { RowData, Table } from '@tanstack/vue-table';
 import { RotateCcw, Trash } from 'lucide-vue-next';
 import { AnimatePresence, motion } from 'motion-v';
 import { computed } from 'vue';
@@ -38,6 +38,8 @@ const currentRoute = route().current();
 const can = props.table.options.meta?.can;
 
 const handleBulkDelete = async () => {
+    if (!currentRoute || !can?.delete) return;
+
     const confirmed = await reveal({
         title: 'Are you sure you want to delete?',
         description: 'Once deleted, all of its resources and data will also be deleted.',
@@ -45,7 +47,7 @@ const handleBulkDelete = async () => {
         variant: 'destructive',
     });
 
-    if (!confirmed.data || !currentRoute || !can?.delete) return;
+    if (!confirmed.data) return;
 
     router.visit(`/${currentRoute}/${ids.value}/bulk-delete`, {
         method: 'delete',
@@ -58,6 +60,8 @@ const handleBulkDelete = async () => {
 };
 
 const handleBulkPermanentDelete = async () => {
+    if (!currentRoute || !can?.force_delete) return;
+
     const confirmed = await reveal({
         title: 'Are you sure you want to permanently delete?',
         description: 'Once deleted, all of its resources and data will also be permanently deleted.',
@@ -65,7 +69,7 @@ const handleBulkPermanentDelete = async () => {
         variant: 'destructive',
     });
 
-    if (!confirmed.data || !currentRoute || !can?.force_delete) return;
+    if (!confirmed.data) return;
 
     router.visit(`/${currentRoute}/${ids.value}/bulk-force-delete`, {
         method: 'delete',
@@ -78,13 +82,15 @@ const handleBulkPermanentDelete = async () => {
 };
 
 const handleBulkRestore = async () => {
+    if (!currentRoute || !can?.restore) return;
+
     const confirmed = await reveal({
         title: 'Are you sure you want to restore?',
         description: 'Once restored, all of its resources and data will also be restored.',
         confirmText: 'Restore',
     });
 
-    if (!confirmed.data || !currentRoute || !can?.restore) return;
+    if (!confirmed.data) return;
 
     router.visit(`/${currentRoute}/${ids.value}/bulk-restore`, {
         method: 'patch',
@@ -137,7 +143,7 @@ const clearSelection = () => {
                 <Separator orientation="vertical" class="hidden data-[orientation=vertical]:h-5 sm:block" />
 
                 <div class="flex items-center gap-1.5">
-                    <template v-if="props.isDeleted === true">
+                    <template v-if="props.isDeleted">
                         <TooltipButton v-if="can?.restore" tooltip="Restore" variant="secondary" @click="handleBulkRestore">
                             <RotateCcw />
                         </TooltipButton>
@@ -146,7 +152,7 @@ const clearSelection = () => {
                         </TooltipButton>
                     </template>
 
-                    <template v-if="props.isDeleted === false">
+                    <template v-if="!props.isDeleted">
                         <template v-if="can?.update">
                             <DataTableActionBarSelect
                                 v-for="column in columns"

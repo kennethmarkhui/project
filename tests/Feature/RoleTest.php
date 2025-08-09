@@ -4,7 +4,6 @@ use App\Enums\PermissionType;
 use App\Enums\RoleType;
 use App\Models\Permission;
 use App\Models\Role;
-use App\Models\User;
 use Inertia\Testing\AssertableInertia;
 
 test('guests are redirected to the login page', function () {
@@ -16,132 +15,149 @@ test('guests are redirected to the login page', function () {
     $this->delete(route('roles.destroy', 1))->assertRedirect(route('login'));
 });
 
-describe('authorized', function () {
-    beforeEach(function () {
-        $this->authorizedUser = User::factory()->create();
-        foreach (PermissionType::forModel(Role::class) as $permission) {
-            Permission::findOrCreate($permission->value);
-        }
-        Role::findOrCreate(RoleType::ADMIN->value)
-            ->syncPermissions(PermissionType::forModelValues(Role::class));
-        $this->authorizedUser->syncRoles(RoleType::ADMIN->value);
-        $this->actingAs($this->authorizedUser);
-    });
-
-    test('can view the roles page', function () {
-        $response = $this->get(route('roles'));
-        $response->assertInertia(fn(AssertableInertia $page) => $page
-            ->component('roles/Index')
-            ->has('roles'));
-    });
-
-    test('can view create page', function () {
-        $response = $this->get(route('roles.create'));
-        $response->assertStatus(200);
-    });
-
-    test('can store', function () {
-        $expectedPermission = PermissionType::USER_READ->value;
-        $permission = Permission::findOrCreate($expectedPermission);
-
-        $response = $this->post(route('roles.store'), [
-            'name' => 'new role',
-            'permissions' => [$permission->id]
-        ]);
-        $response->assertRedirect(route('roles'));
-
-        $role = Role::with('permissions')->where('name', 'new role')->first();
-        expect($role)->not->toBeNull()
-            ->and($role->permissions)->toHaveCount(1)
-            ->and($role->permissions->first()->name)->toBe($expectedPermission);
-    });
-
-    test('can view edit page', function () {
-        $testRole = Role::findOrCreate('test');
-
-        $response = $this->get(route('roles.edit', $testRole->id));
-        $response->assertInertia(fn(AssertableInertia $page) => $page
-            ->component('roles/Edit')
-            ->has('roles')
-            ->has('role')
-            ->has('permissions'));
-    });
-
-    test('can update', function () {
-        $expectedPermission = PermissionType::USER_READ->value;
-        $permission = Permission::findOrCreate($expectedPermission);
-        $testRole = Role::findOrCreate('test');
-
-        $response = $this->patch(route('roles.update', $testRole->id), [
-            'name' => 'updated',
-            'permissions' => [$permission->id]
-        ]);
-        $response->assertRedirect();
-
-        expect($testRole->fresh()->load('permissions'))
-            ->name->toBe('updated')
-            ->and($testRole->permissions)->toHaveCount(1)
-            ->and($testRole->permissions->first()->name)->toBe($expectedPermission);;
-    });
-
-    test('can delete', function () {
-        $testRole = Role::findOrCreate('test');
-
-        $response = $this->delete(route('roles.destroy', $testRole->id));
-        $response->assertRedirect(route('roles'));
-
-        expect($testRole->fresh())
-            ->toBeNull();
-    });
+test('authorized user can view the roles page', function () {
+    $response = $this->authorizedUser()->get(route('roles'));
+    $response->assertInertia(fn(AssertableInertia $page) => $page
+        ->component('roles/Index')
+        ->has('roles'));
 });
 
-describe('unauthorized', function () {
-    beforeEach(function () {
-        $this->unauthorizedUser = User::factory()->create();
-        Role::findOrCreate(RoleType::USER->value);
-        $this->unauthorizedUser->syncRoles(RoleType::USER->value);
-        $this->actingAs($this->unauthorizedUser);
-    });
+test('authorized super admin user can view a system role page', function () {
+    $this->authorizedUser(true)->get(route('roles.show', 1))->assertOK();
+    $this->authorizedUser(true)->get(route('roles.show', 2))->assertOK();
+    $this->authorizedUser(true)->get(route('roles.show', 3))->assertOK();
+    $this->authorizedUser(true)->get(route('roles.show', 4))->assertOK();
+});
 
-    test('cannot view the roles page', function () {
-        $response = $this->get(route('roles'));
-        $response->assertStatus(403);
-    });
+test('authorized user can view a system role page except for super admin', function () {
+    $this->authorizedUser()->get(route('roles.show', 1))->assertNotFound();
+    $this->authorizedUser()->get(route('roles.show', 2))->assertOK();
+    $this->authorizedUser()->get(route('roles.show', 3))->assertOK();
+    $this->authorizedUser()->get(route('roles.show', 4))->assertOK();
+});
 
-    test('cannot view create page', function () {
-        $response = $this->get(route('roles.create'));
-        $response->assertStatus(403);
-    });
+test('authorized user can view create page', function () {
+    $response = $this->authorizedUser()->get(route('roles.create'));
+    $response->assertOk();
+});
 
-    test('cannot store', function () {
-        $response = $this->post(route('roles.store'), [
-            'name' => 'new role',
-            'permissions' => []
-        ]);
-        $response->assertStatus(403);
-    });
+test('authorized user can store', function () {
+    $expectedPermission = PermissionType::USER_READ->value;
+    $permission = Permission::findOrCreate($expectedPermission);
 
-    test('cannot view edit page', function () {
-        $testRole = Role::findOrCreate('test');
+    $response = $this->authorizedUser()->post(route('roles.store'), [
+        'name' => 'new role',
+        'permissions' => [$permission->id]
+    ]);
+    $response->assertRedirect(route('roles'));
 
-        $response = $this->get(route('roles.edit', $testRole->id));
-        $response->assertStatus(403);
-    });
+    $role = Role::with('permissions')->where('name', 'new role')->first();
+    expect($role)->not->toBeNull()
+        ->and($role->permissions)->toHaveCount(1)
+        ->and($role->permissions->first()->name)->toBe($expectedPermission);
+});
 
-    test('cannot update', function () {
-        $testRole = Role::findOrCreate('test');
+test('authorized user can view edit page', function () {
+    $role = Role::create(['name' => 'test']);
 
-        $response = $this->patch(route('roles.update', $testRole->id), [
-            'name' => 'updated',
-            'permissions' => []
-        ]);
-        $response->assertStatus(403);
-    });
+    $response = $this->authorizedUser()->get(route('roles.edit', $role->id));
+    $response->assertInertia(fn(AssertableInertia $page) => $page
+        ->component('roles/Edit')
+        ->has('role')
+        ->has('permissions'));
+});
 
-    test('cannot delete', function () {
-        $testRole = Role::findOrCreate('test');
+test('authorized user cannot view system role edit page', function () {
+    $this->authorizedUser()->get(route('roles.edit', 1))->assertNotFound();
+    $this->authorizedUser()->get(route('roles.edit', 2))->assertForbidden();
+    $this->authorizedUser()->get(route('roles.edit', 3))->assertForbidden();
+    $this->authorizedUser()->get(route('roles.edit', 4))->assertForbidden();
+});
 
-        $response = $this->delete(route('roles.destroy', $testRole->id));
-        $response->assertStatus(403);
-    });
+test('authorized super admin user cannot view system role edit page', function () {
+    $this->authorizedUser(true)->get(route('roles.edit', 1))->assertForbidden();
+    $this->authorizedUser(true)->get(route('roles.edit', 2))->assertForbidden();
+    $this->authorizedUser(true)->get(route('roles.edit', 3))->assertForbidden();
+    $this->authorizedUser(true)->get(route('roles.edit', 4))->assertForbidden();
+});
+
+test('authorized user can update a role', function () {
+    $expectedPermission = PermissionType::USER_READ->value;
+    $permission = Permission::findOrCreate($expectedPermission);
+    $role = Role::findOrCreate('test');
+
+    $response = $this->authorizedUser()->patch(route('roles.update', $role->id), [
+        'name' => 'updated',
+        'permissions' => [$permission->id]
+    ]);
+    $response->assertRedirect();
+
+    expect($role->fresh()->load('permissions'))
+        ->name->toBe('updated')
+        ->and($role->permissions)->toHaveCount(1)
+        ->and($role->permissions->first()->name)->toBe($expectedPermission);;
+});
+
+test('authorized user can delete a role', function () {
+    $role = Role::findOrCreate('test');
+
+    $response = $this->authorizedUser()->delete(route('roles.destroy', $role->id));
+    $response->assertRedirect(route('roles'));
+
+    expect($role->fresh())
+        ->toBeNull();
+});
+
+test('authorized user cannot delete a system role', function () {
+    $response = $this->authorizedUser()->delete(route('roles.destroy', 2));
+    $response->assertForbidden();
+});
+
+test('authorized super admin user cannot delete a system role', function () {
+    $this->authorizedUser(true)->delete(route('roles.destroy', 1))->assertForbidden();
+    $this->authorizedUser(true)->delete(route('roles.destroy', 2))->assertForbidden();
+    $this->authorizedUser(true)->delete(route('roles.destroy', 3))->assertForbidden();
+    $this->authorizedUser(true)->delete(route('roles.destroy', 4))->assertForbidden();
+});
+
+test('unauthorized user cannot view the roles page', function () {
+    $response = $this->unauthorizedUser()->get(route('roles'));
+    $response->assertForbidden();
+});
+
+test('unauthorized user cannot view create page', function () {
+    $response = $this->unauthorizedUser()->get(route('roles.create'));
+    $response->assertForbidden();
+});
+
+test('unauthorized user cannot store', function () {
+    $response = $this->unauthorizedUser()->post(route('roles.store'), [
+        'name' => 'new role',
+        'permissions' => []
+    ]);
+    $response->assertForbidden();
+});
+
+test('unauthorized user cannot view edit page', function () {
+    $role = Role::findOrCreate(RoleType::USER->value);
+
+    $response = $this->unauthorizedUser()->get(route('roles.edit', $role->id));
+    $response->assertForbidden();
+});
+
+test('unauthorized user cannot update', function () {
+    $role = Role::findOrCreate(RoleType::USER->value);
+
+    $response = $this->unauthorizedUser()->patch(route('roles.update', $role->id), [
+        'name' => 'updated',
+        'permissions' => []
+    ]);
+    $response->assertForbidden();
+});
+
+test('unauthorized user cannot delete', function () {
+    $role = Role::findOrCreate(RoleType::USER->value);
+
+    $response = $this->unauthorizedUser()->delete(route('roles.destroy', $role->id));
+    $response->assertForbidden();
 });

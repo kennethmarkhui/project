@@ -26,7 +26,11 @@ export function getUserDataTableColumn(roles: Role[]) {
 
                 if (!role) return null;
 
-                return h(Badge, { variant: 'outline', class: 'py-1 [&>svg]:size-3.5' }, { default: () => h('span', { class: 'capitalize' }, role) });
+                return h(
+                    Badge,
+                    { variant: 'outline', class: 'py-1 [&>svg]:size-3.5' },
+                    { default: () => h('span', { class: 'capitalize text-center' }, role) },
+                );
             },
             enableColumnFilter: true,
             meta: {

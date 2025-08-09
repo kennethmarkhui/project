@@ -17,7 +17,7 @@ class UserSeeder extends Seeder
             fn($role) =>
             [
                 'name' => $role,
-                'email' => $role . '@example.com',
+                'email' => preg_replace('/\s+/', '', $role) . '@example.com',
                 'status' => User::STATUS_APPROVED
             ],
             RoleType::values()

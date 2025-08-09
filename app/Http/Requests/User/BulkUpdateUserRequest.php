@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\User;
 
+use App\Models\Role;
 use App\Models\User;
+use App\Rules\ExistsWithGlobalScope;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -29,7 +31,7 @@ class BulkUpdateUserRequest extends BulkBaseUserRequest
                 'string',
                 'lowercase',
                 'max:255',
-                'exists:roles,name',
+                new ExistsWithGlobalScope(Role::class, 'name'),
                 Rule::requiredIf(!$this->filled('status')),
                 Rule::excludeIf($this->filled('status'))
             ],

@@ -4,6 +4,7 @@ namespace App\Enums;
 
 enum RoleType: string
 {
+    case SUPER_ADMIN = 'super admin';
     case ADMIN = 'admin';
     case EDITOR = 'editor';
     case USER = 'user';
@@ -24,6 +25,7 @@ enum RoleType: string
     public function permissions(): array
     {
         return match ($this) {
+            self::SUPER_ADMIN => [],
             self::ADMIN => [
                 PermissionType::USER_READ,
                 PermissionType::USER_UPDATE,

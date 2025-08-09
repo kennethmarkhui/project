@@ -18,11 +18,17 @@ const page = usePage();
         :columns="columns"
         :options="{
             getRowId: (row) => String(row.id),
+            enableRowSelection: (row) =>
+                !!row.original.can?.create || !!row.original.can?.delete || !!row.original.can?.read || !!row.original.can?.update,
             meta: {
                 can: {
+                    read: page.props.auth.can.role?.read,
                     create: page.props.auth.can.role?.create,
                     update: page.props.auth.can.role?.update,
                     delete: page.props.auth.can.role?.delete,
+                },
+                canRow: (row, action) => {
+                    return !!row.can?.[action];
                 },
             },
         }"

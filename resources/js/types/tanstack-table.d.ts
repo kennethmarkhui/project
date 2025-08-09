@@ -1,7 +1,7 @@
 import '@tanstack/vue-table';
 import { LucideIcon } from 'lucide-vue-next';
 
-import { ResourcePermissions } from '.';
+import { PermissionKey, ResourcePermissions } from '.';
 
 declare module '@tanstack/vue-table' {
     interface ColumnMeta {
@@ -12,9 +12,10 @@ declare module '@tanstack/vue-table' {
         icon?: LucideIcon;
     }
 
-    interface TableMeta {
+    interface TableMeta<TData extends RowData> {
         can?: ResourcePermissions;
         enableSearch?: boolean;
+        canRow?: (row: TData, action: PermissionKey) => boolean;
     }
 }
 

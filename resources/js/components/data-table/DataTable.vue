@@ -36,7 +36,9 @@ interface Props {
     data: TData[];
     columns: ColumnDef<TData, unknown>[];
     total?: number;
-    options?: RequireAtLeastOne<Partial<Pick<TableOptionsWithReactiveData<TData>, 'initialState' | 'getRowId' | 'enableRowSelection' | 'meta'>>>;
+    options?: RequireAtLeastOne<
+        Partial<Pick<TableOptionsWithReactiveData<TData>, 'initialState' | 'getRowId' | 'enableRowSelection' | 'enableMultiRowSelection' | 'meta'>>
+    >;
 }
 
 const props = defineProps<Props>();
@@ -109,6 +111,7 @@ const actionColumn = columnHelper.display({
     cell: ({ row, table }) => {
         const isRowDisabled = !isRowSelectionEnabled(row);
         const isDeleted = hasSoftDelete(row.original) ? Boolean(row.original.deleted_at) : undefined;
+        const isDisabled = isRowDisabled || hasSelection.value;
 
         return h(
             'div',
@@ -116,8 +119,9 @@ const actionColumn = columnHelper.display({
             h(DataTableColumnActionDropdown, {
                 id: Number(row.id),
                 isDeleted,
-                isDisabled: isRowDisabled || hasSelection.value,
-                tableMeta: table.options.meta,
+                isDisabled,
+                row: row.original,
+                tableMeta: table.options.meta as any,
                 onSuccess: () => refetch(),
             }),
         );
@@ -130,9 +134,9 @@ const actionColumn = columnHelper.display({
 const tableColumns = computed(() => {
     const meta = props.options?.meta;
 
-    const showActionColumn = meta?.can?.update || meta?.can?.delete || meta?.can?.force_delete || meta?.can?.restore;
+    const showActionColumn = meta?.can?.read || meta?.can?.update || meta?.can?.delete || meta?.can?.force_delete || meta?.can?.restore;
     const columns: ColumnDef<TData, unknown>[] = [
-        ...(props.options?.enableRowSelection ? [selectionColumn] : []),
+        ...(props.options?.enableMultiRowSelection ? [selectionColumn] : []),
         ...props.columns,
         ...(showActionColumn ? [actionColumn] : []),
     ];
@@ -233,6 +237,7 @@ const tableOptions = computed<TableOptionsWithReactiveData<TData>>(() => {
 
             return true;
         },
+        enableMultiRowSelection: props.options?.enableMultiRowSelection,
 
         meta: props.options?.meta,
     };

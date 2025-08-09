@@ -37,13 +37,23 @@ const columns = getUserDataTableColumn(props.roles);
                 },
             },
             getRowId: (row) => String(row.id),
-            enableRowSelection: (row) => page.props.auth.user.id !== Number(row.id),
+            enableRowSelection: (row) =>
+                !!row.original.can?.create ||
+                !!row.original.can?.delete ||
+                !!row.original.can?.force_delete ||
+                !!row.original.can?.read ||
+                !!row.original.can?.restore ||
+                !!row.original.can?.update,
+            enableMultiRowSelection: true,
             meta: {
                 can: {
                     update: page.props.auth.can.user?.update,
                     delete: page.props.auth.can.user?.delete,
                     restore: page.props.auth.can.user?.restore,
                     force_delete: page.props.auth.can.user?.force_delete,
+                },
+                canRow: (row, action) => {
+                    return !!row.can?.[action];
                 },
                 enableSearch: true,
             },

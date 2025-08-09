@@ -2,14 +2,14 @@
 
 namespace Database\Seeders;
 
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\PermissionRegistrar;
 
-class DatabaseSeeder extends Seeder
+class FeatureTestSeeder extends Seeder
 {
     /**
-     * Seed the application's database.
+     * Run the database seeds.
      */
     public function run(): void
     {
@@ -18,8 +18,11 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             PermissionSeeder::class,
-            RoleSeeder::class,
-            UserSeeder::class
+            RoleSeeder::class
         ]);
+
+        // update cache to know about the newly created permissions (required if using WithoutModelEvents in seeders)
+        // app()[PermissionRegistrar::class]->forgetCachedPermissions();
+
     }
 }

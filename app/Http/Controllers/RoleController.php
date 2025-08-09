@@ -63,7 +63,12 @@ class RoleController extends Controller
      */
     public function show(Role $role)
     {
-        //
+        Gate::authorize('view', $role);
+
+        return Inertia::render('roles/Show', [
+            'role' => $role->loadCount(['users', 'permissions'])->load('permissions')->toResource(),
+            'permissions' => Permission::all()->toResourceCollection(),
+        ]);
     }
 
     /**
@@ -73,13 +78,9 @@ class RoleController extends Controller
     {
         Gate::authorize('update', $role);
 
-        $permissions = Permission::all();
-        $roles = Role::all();
-
         return Inertia::render('roles/Edit', [
             'role' => $role->loadCount(['users', 'permissions'])->load('permissions')->toResource(),
-            'permissions' => $permissions->toResourceCollection(),
-            'roles' => $roles->toResourceCollection()
+            'permissions' => Permission::all()->toResourceCollection(),
         ]);
     }
 

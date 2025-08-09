@@ -40,6 +40,8 @@ class UserPolicy
      */
     public function update(User $user, User $model): bool
     {
+        if ($user->id === $model->id) return false;
+
         return $user->can(PermissionType::USER_UPDATE->value, $model);
     }
 
@@ -48,6 +50,8 @@ class UserPolicy
      */
     public function updateAny(User $authUser, Collection $users): bool
     {
+        if ($users->contains->is($authUser)) return false;
+
         return $users->every(fn($user) => $authUser->can(PermissionType::USER_UPDATE->value, $user));
     }
 
@@ -64,7 +68,6 @@ class UserPolicy
     /**
      * Determine whether the user can delete the model in bulk.
      */
-    // public function deleteAny(User $authUser, array $ids): bool
     public function deleteAny(User $authUser, Collection $users): bool
     {
         if ($users->contains->is($authUser)) return false;
@@ -77,6 +80,8 @@ class UserPolicy
      */
     public function restore(User $user, User $model): bool
     {
+        if ($user->id === $model->id) return false;
+
         return $user->can(PermissionType::USER_RESTORE->value, $model);
     }
 
@@ -93,6 +98,8 @@ class UserPolicy
      */
     public function forceDelete(User $user, User $model): bool
     {
+        if ($user->id === $model->id) return false;
+
         return $user->can(PermissionType::USER_FORCE_DELETE->value, $model);
     }
 

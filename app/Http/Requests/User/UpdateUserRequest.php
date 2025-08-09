@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\User;
 
+use App\Models\Role;
 use App\Models\User;
+use App\Rules\ExistsWithGlobalScope;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -32,8 +34,8 @@ class UpdateUserRequest extends FormRequest
                 'email',
                 'max:255',
             ],
-            'role' => ['required', 'string', 'lowercase', 'max:255', 'exists:roles,name'],
-            'status' => ['required', 'string', 'lowercase', 'max:255', Rule::in(User::STATUS)],
+            'role' => ['required', 'string', 'lowercase', 'max:255', new ExistsWithGlobalScope(Role::class, 'name')],
+            'status' => ['required', 'string', 'lowercase', 'max:255', Rule::in(User::STATUS),],
         ];
     }
 }

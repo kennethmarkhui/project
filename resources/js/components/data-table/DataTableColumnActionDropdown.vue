@@ -1,17 +1,18 @@
-<script setup lang="ts" generic="TData">
+<script setup lang="ts" generic="TData extends RowData">
 import { Link, router } from '@inertiajs/vue3';
 import { MoreHorizontal } from 'lucide-vue-next';
 
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useConfirmDialog } from '@/composables/useConfirmDialog';
-import { TableMeta } from '@tanstack/vue-table';
+import { RowData, TableMeta } from '@tanstack/vue-table';
 
 interface Props {
     id: number;
     isDeleted?: boolean;
     isDisabled?: boolean;
     tableMeta?: TableMeta<TData>;
+    row: TData;
 }
 
 const props = defineProps<Props>();
@@ -25,9 +26,11 @@ const emits = defineEmits<Emits>();
 const { reveal } = useConfirmDialog();
 
 const currentRoute = route().current();
-const can = props.tableMeta?.can;
+const canRow = props.tableMeta?.canRow;
 
 const handleDelete = async () => {
+    if (!currentRoute || !canRow?.(props.row, 'delete')) return;
+
     const confirmed = await reveal({
         title: 'Are you sure you want to delete?',
         description: 'Once deleted, all of its resources and data will also be deleted.',
@@ -35,7 +38,7 @@ const handleDelete = async () => {
         variant: 'destructive',
     });
 
-    if (!confirmed.data || !currentRoute || !can?.delete) return;
+    if (!confirmed.data) return;
 
     router.visit(`/${currentRoute}/${props.id}/delete`, {
         method: 'delete',
@@ -46,6 +49,8 @@ const handleDelete = async () => {
 };
 
 const handlePermanentDelete = async () => {
+    if (!currentRoute || !canRow?.(props.row, 'force_delete')) return;
+
     const confirmed = await reveal({
         title: 'Are you sure you want to permanently delete?',
         description: 'Once deleted, all of its resources and data will also be permanently deleted.',
@@ -53,7 +58,7 @@ const handlePermanentDelete = async () => {
         variant: 'destructive',
     });
 
-    if (!confirmed.data || !currentRoute || !can?.force_delete) return;
+    if (!confirmed.data) return;
 
     router.visit(`/${currentRoute}/${props.id}/force-delete`, {
         method: 'delete',
@@ -64,13 +69,15 @@ const handlePermanentDelete = async () => {
 };
 
 const handleRestore = async () => {
+    if (!currentRoute || !canRow?.(props.row, 'restore')) return;
+
     const confirmed = await reveal({
         title: 'Are you sure you want to restore?',
         description: 'Once restored, all of its resources and data will also be restored.',
         confirmText: 'Restore',
     });
 
-    if (!confirmed.data || !currentRoute || !can?.restore) return;
+    if (!confirmed.data) return;
 
     router.visit(`/${currentRoute}/${props.id}/restore`, {
         method: 'patch',
@@ -90,17 +97,22 @@ const handleRestore = async () => {
             </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-            <DropdownMenuItem v-if="can?.update" as-child>
+            <DropdownMenuItem v-if="canRow?.(props.row, 'read')" as-child>
+                <Link :href="`/${currentRoute}/${props.id}`"> View </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem v-if="canRow?.(props.row, 'update')" as-child>
                 <Link :href="`/${currentRoute}/${props.id}/edit`"> Edit </Link>
             </DropdownMenuItem>
 
             <template v-if="isDeleted">
-                <DropdownMenuItem v-if="can?.restore" @select="handleRestore"> Restore </DropdownMenuItem>
-                <DropdownMenuItem v-if="can?.force_delete" variant="destructive" @select="handlePermanentDelete">
+                <DropdownMenuItem v-if="canRow?.(props.row, 'restore')" @select="handleRestore"> Restore </DropdownMenuItem>
+                <DropdownMenuItem v-if="canRow?.(props.row, 'force_delete')" variant="destructive" @select="handlePermanentDelete">
                     Delete Permanently
                 </DropdownMenuItem>
             </template>
-            <DropdownMenuItem v-if="!isDeleted && can?.delete" variant="destructive" @select="handleDelete"> Delete </DropdownMenuItem>
+            <DropdownMenuItem v-if="!isDeleted && canRow?.(props.row, 'delete')" variant="destructive" @select="handleDelete">
+                Delete
+            </DropdownMenuItem>
         </DropdownMenuContent>
     </DropdownMenu>
 </template>

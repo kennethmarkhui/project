@@ -80,7 +80,7 @@ class UserController extends Controller
             }
         });
 
-        $result = $query->paginate(self::PER_PAGE, ['*'], 'page', $request->query('page'))
+        $result = $query->paginate($request->query('per_page') ?? self::PER_PAGE, ['*'], 'page', $request->query('page'))
             ->withQueryString();
 
         $filters = array_merge(

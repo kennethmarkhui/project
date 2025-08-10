@@ -31,6 +31,8 @@ import DataTableColumnActionDropdown from './DataTableColumnActionDropdown.vue';
 import DataTablePagination from './DataTablePagination.vue';
 import DataTableToolbar from './DataTableToolbar.vue';
 
+const PER_PAGE = 10;
+
 function hasSoftDelete(row: any): row is { deleted_at?: Date | string | null } {
     return row && typeof row === 'object' && 'deleted_at' in row;
 }
@@ -65,7 +67,7 @@ const globalFilter = ref<string>(props.options?.state?.globalFilter ?? '');
 const sorting = ref<SortingState>(props.options?.state?.sorting ?? []);
 const pagination = ref<PaginationState>({
     pageIndex: props.options?.state?.pagination?.pageIndex ?? 0,
-    pageSize: props.options?.state?.pagination?.pageSize ?? 10,
+    pageSize: props.options?.state?.pagination?.pageSize ?? PER_PAGE,
 });
 const rowSelection = ref<RowSelectionState>({});
 
@@ -269,11 +271,12 @@ const tableOptions = computed<TableOptionsWithReactiveData<TData>>(() => {
 const table = useVueTable(tableOptions.value);
 
 const buildQuery = () => {
-    const query: { search?: string; page?: number; sort?: string; filters?: string; deleted?: string } = {};
+    const query: { search?: string; page?: number; per_page?: number; sort?: string; filters?: string; deleted?: string } = {};
     const search = globalFilter.value;
     const filters = columnFilters.value.filter((item) => item.id !== 'deleted_at');
     const sort = sorting.value;
     const page = pagination.value.pageIndex;
+    const per_page = pagination.value.pageSize !== PER_PAGE && pagination.value.pageSize;
     const deleted = columnFilters.value.find((item) => item.id === 'deleted_at');
 
     if (search) {
@@ -290,6 +293,10 @@ const buildQuery = () => {
 
     if (deleted && Array.isArray(deleted.value) && deleted.value.length > 0) {
         query.deleted = deleted.value[0];
+    }
+
+    if (per_page) {
+        query.per_page = per_page;
     }
 
     query.page = page && page + 1;

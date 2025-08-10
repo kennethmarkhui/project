@@ -34,7 +34,7 @@ const onReset = () => emit('reset');
     <div class="flex w-full items-start justify-between gap-2 p-1">
         <div class="flex flex-1 flex-wrap items-center gap-2">
             <Input
-                v-if="props.table.options.meta?.enableSearch"
+                v-if="props.table.options.enableGlobalFilter"
                 class="h-8 w-40 lg:w-56"
                 placeholder="Search"
                 :model-value="searchTerm"

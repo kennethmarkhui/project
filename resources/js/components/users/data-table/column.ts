@@ -1,4 +1,4 @@
-import { ColumnDef, createColumnHelper } from '@tanstack/vue-table';
+import { type ColumnDef, createColumnHelper } from '@tanstack/vue-table';
 import { CircleCheck, UserCog } from 'lucide-vue-next';
 import { h } from 'vue';
 
@@ -40,8 +40,10 @@ export function getUserDataTableColumn(roles: Role[]) {
                     value: name,
                 })),
                 variant: 'multiSelect',
-                action: true,
-                icon: UserCog,
+                action: {
+                    enabled: true,
+                    icon: UserCog,
+                },
             },
             size: 40,
         }),
@@ -66,8 +68,10 @@ export function getUserDataTableColumn(roles: Role[]) {
                     value: status,
                 })),
                 variant: 'multiSelect',
-                action: true,
-                icon: CircleCheck,
+                action: {
+                    enabled: true,
+                    icon: CircleCheck,
+                },
             },
         }),
         columnHelper.accessor('deleted_at', {

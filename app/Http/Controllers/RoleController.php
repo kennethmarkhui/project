@@ -21,9 +21,11 @@ class RoleController extends Controller
         Gate::authorize('viewAny', Role::class);
 
         $roles = Role::query()->withCount(['users', 'permissions'])->with('permissions')->get();
+        $permissions = Permission::all();
 
         return Inertia::render('roles/Index', [
-            'roles' => $roles->toResourceCollection()
+            'roles' => $roles->toResourceCollection(),
+            'permissions' => $permissions->toResourceCollection(),
         ]);
     }
 

@@ -8,13 +8,14 @@ declare module '@tanstack/vue-table' {
         label?: string;
         options?: Option[];
         variant?: 'multiSelect' | 'select';
-        action?: boolean;
-        icon?: LucideIcon;
+        action?: {
+            enabled: boolean;
+            icon?: LucideIcon;
+        };
     }
 
     interface TableMeta<TData extends RowData> {
         can?: ResourcePermissions;
-        enableSearch?: boolean;
         canRow?: (row: TData, action: PermissionKey) => boolean;
     }
 }

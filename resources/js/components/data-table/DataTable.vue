@@ -6,6 +6,9 @@ import {
     createColumnHelper,
     FlexRender,
     getCoreRowModel,
+    getFilteredRowModel,
+    getPaginationRowModel,
+    getSortedRowModel,
     type PaginationState,
     type Row,
     type RowData,
@@ -37,20 +40,35 @@ interface Props {
     columns: ColumnDef<TData, unknown>[];
     total?: number;
     options?: RequireAtLeastOne<
-        Partial<Pick<TableOptionsWithReactiveData<TData>, 'initialState' | 'getRowId' | 'enableRowSelection' | 'enableMultiRowSelection' | 'meta'>>
+        Partial<
+            Pick<
+                TableOptionsWithReactiveData<TData>,
+                | 'initialState'
+                | 'state'
+                | 'enableGlobalFilter'
+                | 'enableRowSelection'
+                | 'enableMultiRowSelection'
+                | 'getRowId'
+                | 'manualFiltering'
+                | 'manualPagination'
+                | 'manualSorting'
+                | 'meta'
+            >
+        >
     >;
 }
 
 const props = defineProps<Props>();
 
-const columnFilters = ref<ColumnFiltersState>(props.options?.initialState?.columnFilters ?? []);
-const globalFilter = ref<string>(props.options?.initialState?.globalFilter ?? '');
-const sorting = ref<SortingState>(props.options?.initialState?.sorting ?? []);
+const columnFilters = ref<ColumnFiltersState>(props.options?.state?.columnFilters ?? []);
+const globalFilter = ref<string>(props.options?.state?.globalFilter ?? '');
+const sorting = ref<SortingState>(props.options?.state?.sorting ?? []);
 const pagination = ref<PaginationState>({
-    pageIndex: props.options?.initialState?.pagination?.pageIndex ?? 0,
-    pageSize: props.options?.initialState?.pagination?.pageSize ?? 10,
+    pageIndex: props.options?.state?.pagination?.pageIndex ?? 0,
+    pageSize: props.options?.state?.pagination?.pageSize ?? 10,
 });
 const rowSelection = ref<RowSelectionState>({});
+
 const columnVisibility = ref<VisibilityState>(props.options?.initialState?.columnVisibility ?? {});
 
 const selectedRows: Ref<Map<string, TData>> = ref(new Map());
@@ -156,6 +174,9 @@ const tableOptions = computed<TableOptionsWithReactiveData<TData>>(() => {
             return props.total;
         },
         getCoreRowModel: getCoreRowModel(),
+        getSortedRowModel: props.options?.manualSorting ? undefined : getSortedRowModel(),
+        getPaginationRowModel: props.options?.manualPagination ? undefined : getPaginationRowModel(),
+        getFilteredRowModel: props.options?.manualFiltering ? undefined : getFilteredRowModel(),
 
         initialState: {
             get columnVisibility() {
@@ -184,27 +205,27 @@ const tableOptions = computed<TableOptionsWithReactiveData<TData>>(() => {
             },
         },
 
-        manualFiltering: true,
-        manualSorting: true,
-        manualPagination: true,
+        manualFiltering: !!props.options?.manualFiltering,
+        manualSorting: !!props.options?.manualSorting,
+        manualPagination: !!props.options?.manualPagination,
 
         onColumnFiltersChange: (updaterOrValue) => {
             columnFilters.value = typeof updaterOrValue === 'function' ? updaterOrValue(columnFilters.value) : updaterOrValue;
-            pagination.value = { pageIndex: 0, pageSize: 10 };
-            onChange();
+            table.resetPageIndex();
+            if (props.options?.manualFiltering) onChange();
         },
         onGlobalFilterChange: (updaterOrValue) => {
             globalFilter.value = typeof updaterOrValue === 'function' ? updaterOrValue(globalFilter.value) : updaterOrValue;
-            pagination.value = { pageIndex: 0, pageSize: 10 };
-            onChange();
+            table.resetPageIndex();
+            if (props.options?.manualFiltering && props.options.enableGlobalFilter) onChange();
         },
         onSortingChange: (updaterOrValue) => {
             sorting.value = typeof updaterOrValue === 'function' ? updaterOrValue(sorting.value) : updaterOrValue;
-            onChange();
+            if (props.options?.manualSorting) onChange();
         },
         onPaginationChange: (updaterOrValue) => {
             pagination.value = typeof updaterOrValue === 'function' ? updaterOrValue(pagination.value) : updaterOrValue;
-            onChange();
+            if (props.options?.manualPagination) onChange();
         },
         onRowSelectionChange: (updaterOrValue) => {
             rowSelection.value = typeof updaterOrValue === 'function' ? updaterOrValue(rowSelection.value) : updaterOrValue;
@@ -238,6 +259,8 @@ const tableOptions = computed<TableOptionsWithReactiveData<TData>>(() => {
             return true;
         },
         enableMultiRowSelection: props.options?.enableMultiRowSelection,
+        enableGlobalFilter: props.options?.enableGlobalFilter,
+        globalFilterFn: props.options?.manualFiltering && !props.options?.enableGlobalFilter ? undefined : 'includesString',
 
         meta: props.options?.meta,
     };
@@ -293,7 +316,7 @@ const onChange = useDebounceFn(() => {
 const onReset = () => {
     columnFilters.value = [];
     globalFilter.value = '';
-    pagination.value = { pageIndex: 0, pageSize: 10 };
+    table.resetPageIndex();
     onChange();
 };
 
@@ -344,7 +367,7 @@ const onRemoveRow = (key: string) => {
             </Table>
         </div>
 
-        <div v-if="props.options?.initialState?.pagination" class="flex items-center justify-end space-x-2 p-1">
+        <div class="flex items-center justify-end space-x-2 p-1">
             <DataTablePagination :table="table" />
         </div>
 

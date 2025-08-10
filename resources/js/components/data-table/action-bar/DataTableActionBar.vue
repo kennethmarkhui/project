@@ -32,7 +32,7 @@ const ids = computed(() => Object.keys(props.table.getState().rowSelection).join
 
 const columns = props.table
     .getAllColumns()
-    .filter((column) => column.getCanFilter() && column.columnDef.meta?.variant === 'multiSelect' && column.columnDef.meta?.action);
+    .filter((column) => column.getCanFilter() && column.columnDef.meta?.variant === 'multiSelect' && column.columnDef.meta?.action?.enabled);
 
 const currentRoute = route().current();
 const can = props.table.options.meta?.can;
@@ -162,7 +162,7 @@ const clearSelection = () => {
                                 :is-disabled="numberSelected < 2"
                                 @select="(value) => handleBulkUpdate(column.id, value)"
                             >
-                                <component v-if="column?.columnDef.meta?.icon" :is="column?.columnDef.meta?.icon" />
+                                <component v-if="column?.columnDef.meta?.action?.icon" :is="column?.columnDef.meta?.action?.icon" />
                             </DataTableActionBarSelect>
                         </template>
 

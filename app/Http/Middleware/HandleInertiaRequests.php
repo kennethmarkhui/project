@@ -58,6 +58,9 @@ class HandleInertiaRequests extends Middleware
                     })
                     ->toArray() : [],
             ],
+            'flash' => [
+                'success' => fn() => $request->session()->get('success'),
+            ],
             'ziggy' => [
                 ...(new Ziggy)->toArray(),
                 'location' => $request->url(),

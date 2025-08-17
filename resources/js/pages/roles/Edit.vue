@@ -10,24 +10,29 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useConfirmDialog } from '@/composables/useConfirmDialog';
 import AppLayout from '@/layouts/AppLayout.vue';
+import { getlayout } from '@/lib/layout';
 import { isArrayEqual } from '@/lib/utils';
-import type { BreadcrumbItem, Permission, Role } from '@/types';
+import type { Permission, Role } from '@/types';
+
+defineOptions({
+    layout: getlayout(AppLayout, () => ({
+        breadcrumbs: [
+            {
+                title: 'Roles',
+                href: '/roles',
+            },
+            {
+                title: 'Edit',
+                href: '/roles/edit',
+            },
+        ],
+    })),
+});
 
 interface Props {
     role: Role;
     permissions: Permission[];
 }
-
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Roles',
-        href: '/roles',
-    },
-    {
-        title: 'Edit',
-        href: '/roles/edit',
-    },
-];
 
 const props = defineProps<Props>();
 
@@ -97,45 +102,43 @@ const submit = () => {
 </script>
 
 <template>
-    <AppLayout :breadcrumbs="breadcrumbs">
-        <Head title="Edit Role" />
+    <Head title="Edit Role" />
 
-        <div class="mx-auto w-full max-w-7xl px-4 py-6">
-            <div class="px-4 py-6">
-                <form @submit.prevent="submit" class="flex flex-col gap-4">
-                    <EditableText v-model="form.name" activationMode="none" submitMode="none" :disabled="props.role.is_system">
-                        <TooltipButton
-                            v-if="$page.props.auth.can.role?.delete"
-                            tooltip="Delete"
-                            variant="clear"
-                            @click="handleDelete"
-                            :disabled="props.role.is_system"
-                        >
-                            <Trash2 class="text-destructive" />
-                        </TooltipButton>
-                    </EditableText>
+    <div class="mx-auto w-full max-w-7xl px-4 py-6">
+        <div class="px-4 py-6">
+            <form @submit.prevent="submit" class="flex flex-col gap-4">
+                <EditableText v-model="form.name" activationMode="none" submitMode="none" :disabled="props.role.is_system">
+                    <TooltipButton
+                        v-if="props.role.can?.delete"
+                        tooltip="Delete"
+                        variant="clear"
+                        @click="handleDelete"
+                        :disabled="props.role.is_system"
+                    >
+                        <Trash2 class="text-destructive" />
+                    </TooltipButton>
+                </EditableText>
 
-                    <MatrixTable :items="props.permissions.map((permission) => permission.name)">
-                        <template #default="{ headRow, headColumn }">
-                            <Checkbox
-                                :modelValue="isChecked(headRow, headColumn)"
-                                @update:modelValue="
-                                    (value) => {
-                                        const permission = findPermission(`${headRow}.${headColumn}`);
-                                        if (permission) togglePermission(permission.id, value);
-                                    }
-                                "
-                                :disabled="!findPermission(`${headRow}.${headColumn}`) || props.role.is_system"
-                            />
-                        </template>
-                    </MatrixTable>
+                <MatrixTable :items="props.permissions.map((permission) => permission.name)">
+                    <template #default="{ headRow, headColumn }">
+                        <Checkbox
+                            :modelValue="isChecked(headRow, headColumn)"
+                            @update:modelValue="
+                                (value) => {
+                                    const permission = findPermission(`${headRow}.${headColumn}`);
+                                    if (permission) togglePermission(permission.id, value);
+                                }
+                            "
+                            :disabled="!findPermission(`${headRow}.${headColumn}`) || props.role.is_system"
+                        />
+                    </template>
+                </MatrixTable>
 
-                    <div v-if="!props.role.is_system" class="ml-auto space-x-2">
-                        <Button :disabled="!isFormDirty" variant="ghost" @click="form.reset()">Reset</Button>
-                        <Button :disabled="!isFormDirty" type="submit">Save</Button>
-                    </div>
-                </form>
-            </div>
+                <div v-if="!props.role.is_system" class="ml-auto space-x-2">
+                    <Button :disabled="!isFormDirty" variant="ghost" @click="form.reset()">Reset</Button>
+                    <Button :disabled="!isFormDirty" type="submit">Save</Button>
+                </div>
+            </form>
         </div>
-    </AppLayout>
+    </div>
 </template>

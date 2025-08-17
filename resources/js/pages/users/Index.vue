@@ -3,7 +3,19 @@ import { Head } from '@inertiajs/vue3';
 
 import UserDataTable from '@/components/users/data-table/UserDataTable.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
-import type { BreadcrumbItem, Paginated, Role, User } from '@/types';
+import { getlayout } from '@/lib/layout';
+import type { Paginated, Role, User } from '@/types';
+
+defineOptions({
+    layout: getlayout(AppLayout, () => ({
+        breadcrumbs: [
+            {
+                title: 'Users',
+                href: '/users',
+            },
+        ],
+    })),
+});
 
 interface Props {
     users: Paginated<User[]>;
@@ -13,22 +25,13 @@ interface Props {
     roles: Role[];
 }
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Users',
-        href: '/users',
-    },
-];
-
 const props = defineProps<Props>();
 </script>
 
 <template>
-    <AppLayout :breadcrumbs="breadcrumbs">
-        <Head title="Users" />
+    <Head title="Users" />
 
-        <div class="container mx-auto flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
-            <UserDataTable :users="props.users" :filters="props.filters" :search="props.search" :sort="props.sort" :roles="props.roles" />
-        </div>
-    </AppLayout>
+    <div class="container mx-auto flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
+        <UserDataTable :users="props.users" :filters="props.filters" :search="props.search" :sort="props.sort" :roles="props.roles" />
+    </div>
 </template>

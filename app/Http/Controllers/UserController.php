@@ -7,9 +7,9 @@ use App\Http\Requests\User\BulkRestoreUserRequest;
 use App\Http\Requests\User\BulkUpdateUserRequest;
 use App\Http\Requests\User\BulkForceDeleteUserRequest;
 use App\Http\Requests\User\UpdateUserRequest;
+use App\Http\Resources\Authorizable\UserResource as AuthorizableUserResource;
 use App\Models\Role;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Gate;
@@ -26,59 +26,10 @@ class UserController extends Controller
     {
         Gate::authorize('viewAny', User::class);
 
-        $searchableColumns = ['name', 'email'];
-
         $query = User::query()->with('roles');
 
-        $query->when($request->query('search'), function (Builder $query, ?string $search) use ($searchableColumns) {
-            $query->where(function ($query) use ($searchableColumns, $search) {
-                foreach ($searchableColumns as $column) {
-                    $query->orWhere($column, 'like', "%{$search}%");
-                }
-            });
-        });
-
-        $query->when($request->query('filters'), function (Builder $query, ?string $filters) {
-            $filters = json_decode($filters, true);
-            foreach ($filters as $filter) {
-                if (!isset($filter['id'], $filter['value'])) continue;
-
-                if ($filter['id'] === 'role') {
-                    $query->whereHas('roles', function ($query) use ($filter) {
-                        $query->whereIn('name', $filter['value']);
-                    });
-                } else {
-                    $query->whereIn($filter['id'], $filter['value']);
-                }
-            }
-        });
-
-        $query->when($request->query('sort'), function (Builder $query, ?string $sorting) {
-            $sorting = json_decode($sorting, true);
-            foreach ($sorting as $sort) {
-                if (!isset($sort['id'], $sort['desc'])) continue;
-
-                if ($sort['id'] === 'role') {
-                    $query->leftJoin('model_has_roles', function ($join) use ($query) {
-                        $join->on('users.id', '=', 'model_has_roles.model_id')
-                            ->where('model_has_roles.model_type', $query->getModel()::class);
-                    })
-                        ->leftJoin('roles', 'roles.id', '=', 'model_has_roles.role_id')
-                        ->orderBy('roles.name', $sort['desc'] ? 'desc' : 'asc')
-                        ->select('users.*');
-                } else {
-                    $query->orderBy($sort['id'], $sort['desc'] ? 'desc' : 'asc');
-                }
-            }
-        });
-
-        $query->when($request->query('deleted'), function (Builder $query, ?string $deleted) {
-            if ($deleted === 'only') {
-                $query->onlyTrashed();
-            } elseif ($deleted === 'with') {
-                $query->withTrashed();
-            }
-        });
+        $query->filterBy($request->only('search', 'filters', 'deleted'))
+            ->sortBy($request->only('sort'));
 
         $result = $query->paginate($request->query('per_page') ?? self::PER_PAGE, ['*'], 'page', $request->query('page'))
             ->withQueryString();
@@ -89,7 +40,7 @@ class UserController extends Controller
         ) ?: null;
 
         return Inertia::render('users/Index', [
-            'users' => $result->toResourceCollection(),
+            'users' => $result->toResourceCollection(AuthorizableUserResource::class),
             'search' => $request->query('search'),
             'filters' => $filters,
             'sort' => json_decode($request->query('sort'), true),
@@ -129,7 +80,7 @@ class UserController extends Controller
         Gate::authorize('update', $user);
 
         return Inertia::render('users/Edit', [
-            'user' => $user->load('roles')->toResource(),
+            'user' => $user->load('roles')->toResource(AuthorizableUserResource::class),
             'roles' => Role::all()->pluck('name')
         ]);
     }
@@ -155,7 +106,7 @@ class UserController extends Controller
             $user->syncRoles($validated['role']);
         }
 
-        return to_route('users');
+        return to_route('users')->with('success', 'User has been updated');
     }
 
     public function bulkUpdate(BulkUpdateUserRequest $request)
@@ -180,7 +131,7 @@ class UserController extends Controller
             });
         }
 
-        return back();
+        return back()->with('success', 'Users has been updated');
     }
 
     /**
@@ -192,7 +143,9 @@ class UserController extends Controller
 
         $user->delete();
 
-        return $request->input('from') === 'users' ? back() : to_route('users');
+        return $request->input('from') === 'users'
+            ? back()->with('success', 'User has been deleted')
+            : to_route('users')->with('success', 'User has been deleted');
     }
 
     public function bulkDestroy(BulkDestroyUserRequest $request)
@@ -207,7 +160,7 @@ class UserController extends Controller
 
         User::whereIn('id', $ids)->delete();
 
-        return back();
+        return back()->with('success', 'Users has been deleted');
     }
 
     /**
@@ -219,7 +172,9 @@ class UserController extends Controller
 
         $user->restore();
 
-        return $request->input('from') === 'users' ? back() : to_route('users');
+        return $request->input('from') === 'users'
+            ? back()->with('success', 'User has been restored')
+            : to_route('users')->with('success', 'User has been restored');
     }
 
     public function bulkRestore(BulkRestoreUserRequest $request)
@@ -234,7 +189,7 @@ class UserController extends Controller
 
         User::onlyTrashed()->whereIn('id', $ids)->restore();
 
-        return back();
+        return back()->with('success', 'Users has been restored');
     }
 
     /**
@@ -246,7 +201,9 @@ class UserController extends Controller
 
         $user->forceDelete();
 
-        return $request->input('from') === 'users' ? back() : to_route('users');
+        return $request->input('from') === 'users'
+            ? back()->with('success', 'User has been permanently deleted')
+            : to_route('users')->with('success', 'User has been permanently deleted');
     }
 
     public function bulkForceDelete(BulkForceDeleteUserRequest $request)
@@ -261,6 +218,6 @@ class UserController extends Controller
 
         User::onlyTrashed()->whereIn('id', $ids)->forceDelete();
 
-        return back();
+        return back()->with('success', 'Users has been permanently deleted');
     }
 }

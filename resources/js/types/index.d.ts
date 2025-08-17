@@ -1,3 +1,4 @@
+import { ToastType } from '@/components/Toaster.vue';
 import type { LucideIcon } from 'lucide-vue-next';
 import type { Config } from 'ziggy-js';
 
@@ -30,10 +31,15 @@ export interface NavItem {
     isActive?: boolean;
 }
 
+export type ToastMessage = {
+    [P in ToastType]: string | null;
+};
+
 export type AppPageProps<T extends Record<string, unknown> = Record<string, unknown>> = T & {
     name: string;
     quote: { message: string; author: string };
     auth: Auth;
+    flash: ToastMessage;
     ziggy: Config & { location: string };
     sidebarOpen: boolean;
 };
@@ -92,8 +98,6 @@ export interface Paginated<T> {
         total: number;
     };
 }
-
-export type BreadcrumbItemType = BreadcrumbItem;
 
 // https://learn.microsoft.com/en-us/javascript/api/@azure/keyvault-certificates/requireatleastone?view=azure-node-latest
 export type RequireAtLeastOne<T> = {

@@ -6,6 +6,7 @@ import { useConfirmDialog } from '@/composables/useConfirmDialog';
 
 interface Props {
     id: number;
+    permanent?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -14,13 +15,15 @@ const { reveal } = useConfirmDialog();
 
 const handleDelete = async () => {
     const confirmed = await reveal({
-        title: 'Are you sure you want to delete the user?',
-        description: 'Once the user is deleted, all of its resources and data will also be deleted.',
-        confirmText: 'Delete User',
+        title: props.permanent ? 'Are you sure you want to delete the user permanently?' : 'Are you sure you want to delete the user?',
+        description: props.permanent
+            ? 'Once the user is deleted, all of its resources and data will also be permanently deleted.'
+            : 'Once the user is deleted, all of its resources and data will also be deleted.',
+        confirmText: props.permanent ? 'Delete Permanently' : 'Delete User',
         variant: 'destructive',
     });
 
-    if (confirmed.data) router.delete(route('users.destroy', props.id));
+    if (confirmed.data) router.delete(route(props.permanent ? 'users.force_delete' : 'users.destroy', props.id));
 };
 </script>
 

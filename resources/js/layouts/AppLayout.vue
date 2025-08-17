@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import ConfirmDialog from '@/components/confirm-dialog/ConfirmDialog.vue';
+import Toaster from '@/components/Toaster.vue';
 import AppLayout from '@/layouts/app/AppSidebarLayout.vue';
-import type { BreadcrumbItemType } from '@/types';
+import type { BreadcrumbItem } from '@/types';
 
 interface Props {
-    breadcrumbs?: BreadcrumbItemType[];
+    breadcrumbs?: BreadcrumbItem[];
 }
 
 withDefaults(defineProps<Props>(), {
@@ -17,4 +18,5 @@ withDefaults(defineProps<Props>(), {
         <slot />
     </AppLayout>
     <ConfirmDialog />
+    <Toaster />
 </template>

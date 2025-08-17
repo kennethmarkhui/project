@@ -11,23 +11,28 @@ import DeleteUser from '@/components/users/DeleteUser.vue';
 import RestoreUser from '@/components/users/RestoreUser.vue';
 import { STATUS } from '@/constants';
 import AppLayout from '@/layouts/AppLayout.vue';
-import type { BreadcrumbItem, User } from '@/types';
+import { getlayout } from '@/lib/layout';
+import type { User } from '@/types';
+
+defineOptions({
+    layout: getlayout(AppLayout, () => ({
+        breadcrumbs: [
+            {
+                title: 'Users',
+                href: '/users',
+            },
+            {
+                title: 'Edit',
+                href: '/users/edit',
+            },
+        ],
+    })),
+});
 
 interface Props {
     user: User;
     roles: string[];
 }
-
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Users',
-        href: '/users',
-    },
-    {
-        title: 'Edit',
-        href: '/users/edit',
-    },
-];
 
 const props = defineProps<Props>();
 
@@ -48,70 +53,62 @@ const submit = () => {
 </script>
 
 <template>
-    <AppLayout :breadcrumbs="breadcrumbs">
-        <Head title="Edit User" />
+    <Head title="Edit User" />
 
-        <div class="space-y-12 px-4 py-6">
-            <Heading
-                title="Edit User Profile"
-                description="Update user details such as name, email, role, and account status. Ensure all changes are accurate before saving."
-            />
+    <div class="space-y-12 px-4 py-6">
+        <Heading
+            title="Edit User Profile"
+            description="Update user details such as name, email, role, and account status. Ensure all changes are accurate before saving."
+        />
 
-            <div class="flex items-center">
-                <form @submit.prevent="submit" class="space-y-6">
-                    <div>
-                        <Label for="name">Name</Label>
-                        <Input id="name" :disabled="isDeleted" v-model="form.name" required placeholder="Full name" />
-                        <InputError :message="form.errors.name" />
-                    </div>
+        <div class="flex items-center">
+            <form @submit.prevent="submit" class="space-y-6">
+                <div>
+                    <Label for="name">Name</Label>
+                    <Input id="name" :disabled="isDeleted" v-model="form.name" required placeholder="Full name" />
+                    <InputError :message="form.errors.name" />
+                </div>
 
-                    <div>
-                        <Label for="email">Email</Label>
-                        <Input id="email" :disabled="isDeleted" type="email" v-model="form.email" required placeholder="Email address" />
-                        <InputError :message="form.errors.email" />
-                    </div>
+                <div>
+                    <Label for="email">Email</Label>
+                    <Input id="email" :disabled="isDeleted" type="email" v-model="form.email" required placeholder="Email address" />
+                    <InputError :message="form.errors.email" />
+                </div>
 
-                    <div>
-                        <Label for="role">Role</Label>
-                        <Select v-model="form.role">
-                            <SelectTrigger id="role" :disabled="isDeleted">
-                                <SelectValue placeholder="Select a role" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem v-for="role in props.roles" :key="role" :value="role" class="capitalize">{{ role }}</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <InputError :message="form.errors.role" />
-                    </div>
+                <div>
+                    <Label for="role">Role</Label>
+                    <Select v-model="form.role">
+                        <SelectTrigger id="role" :disabled="isDeleted">
+                            <SelectValue placeholder="Select a role" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem v-for="role in props.roles" :key="role" :value="role" class="capitalize">{{ role }}</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <InputError :message="form.errors.role" />
+                </div>
 
-                    <div>
-                        <Label for="status">Status</Label>
-                        <Select v-model="form.status">
-                            <SelectTrigger id="status" :disabled="isDeleted">
-                                <SelectValue placeholder="Select a status" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem v-for="status in STATUS" :key="status" :value="status" class="capitalize">{{ status }}</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <InputError :message="form.errors.status" />
-                    </div>
+                <div>
+                    <Label for="status">Status</Label>
+                    <Select v-model="form.status">
+                        <SelectTrigger id="status" :disabled="isDeleted">
+                            <SelectValue placeholder="Select a status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem v-for="status in STATUS" :key="status" :value="status" class="capitalize">{{ status }}</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <InputError :message="form.errors.status" />
+                </div>
 
-                    <Button :disabled="!form.isDirty">Save</Button>
-                </form>
-            </div>
-
-            <template v-if="isDeleted">
-                <RestoreUser v-if="$page.props.auth.can.user?.restore" :id="props.user.id" />
-                <DeleteUser
-                    v-if="$page.props.auth.can.user?.force_delete"
-                    :id="props.user.id"
-                    confirm-text="Delete Permanently"
-                    dialog-title="Are you sure you want to delete the user permanently?"
-                    dialog-description="Once the user is deleted, all of its resources and data will also be permanently deleted."
-                />
-            </template>
-            <DeleteUser v-if="!isDeleted && $page.props.auth.can.user?.delete" :id="props.user.id" />
+                <Button :disabled="!form.isDirty">Save</Button>
+            </form>
         </div>
-    </AppLayout>
+
+        <template v-if="isDeleted">
+            <RestoreUser v-if="props.user.can?.restore" :id="props.user.id" />
+            <DeleteUser v-if="props.user.can?.force_delete" :id="props.user.id" permanent />
+        </template>
+        <DeleteUser v-if="!isDeleted && props.user.can?.delete" :id="props.user.id" />
+    </div>
 </template>

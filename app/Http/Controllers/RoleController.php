@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Role\StoreRoleRequest;
 use App\Http\Requests\Role\UpdateRoleRequest;
+use App\Http\Resources\Authorizable\RoleResource as AuthorizableRoleResource;
 use App\Models\Permission;
 use App\Models\Role;
 use Illuminate\Http\Request;
@@ -24,7 +25,7 @@ class RoleController extends Controller
         $permissions = Permission::all();
 
         return Inertia::render('roles/Index', [
-            'roles' => $roles->toResourceCollection(),
+            'roles' => $roles->toResourceCollection(AuthorizableRoleResource::class),
             'permissions' => $permissions->toResourceCollection(),
         ]);
     }
@@ -57,7 +58,7 @@ class RoleController extends Controller
             $role->syncPermissions($validated['permissions']);
         }
 
-        return to_route('roles');
+        return to_route('roles')->with('success', 'Role has been created');
     }
 
     /**
@@ -68,7 +69,7 @@ class RoleController extends Controller
         Gate::authorize('view', $role);
 
         return Inertia::render('roles/Show', [
-            'role' => $role->loadCount(['users', 'permissions'])->load('permissions')->toResource(),
+            'role' => $role->loadCount(['users', 'permissions'])->load('permissions')->toResource(AuthorizableRoleResource::class),
             'permissions' => Permission::all()->toResourceCollection(),
         ]);
     }
@@ -81,7 +82,7 @@ class RoleController extends Controller
         Gate::authorize('update', $role);
 
         return Inertia::render('roles/Edit', [
-            'role' => $role->loadCount(['users', 'permissions'])->load('permissions')->toResource(),
+            'role' => $role->loadCount(['users', 'permissions'])->load('permissions')->toResource(AuthorizableRoleResource::class),
             'permissions' => Permission::all()->toResourceCollection(),
         ]);
     }
@@ -97,7 +98,7 @@ class RoleController extends Controller
         $role->update(Arr::except($validated, 'permissions'));
         $role->syncPermissions($validated['permissions']);
 
-        return back();
+        return back()->with('success', 'Role has been updated');
     }
 
     /**
@@ -109,6 +110,6 @@ class RoleController extends Controller
 
         $role->delete();
 
-        return $request->input('from') === 'roles' ? back() : to_route('roles');
+        return $request->input('from') === 'roles' ? back()->with('success', 'Role has been deleted') : to_route('roles')->with('success', 'Role has been deleted');
     }
 }

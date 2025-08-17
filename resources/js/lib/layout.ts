@@ -6,7 +6,7 @@ type ComponentProps<T> = T extends new (...args: any) => { $props: infer P }
     ? NonNullable<P>
     : T extends (props: infer P, ...args: any) => any
       ? P
-      : {};
+      : Record<string, never>;
 
 type Renderer<T extends VNode> = (
     h: typeof hyperscript,

@@ -4,7 +4,6 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 
-use App\Traits\HasSuperAdmin;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -14,17 +13,7 @@ use Spatie\Permission\Traits\HasRoles;
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, SoftDeletes, HasRoles, HasSuperAdmin;
-
-    public const STATUS_APPROVED = 'approved';
-    public const STATUS_DENIED = 'denied';
-    public const STATUS_PENDING = 'pending';
-
-    public const STATUS = [
-        self::STATUS_APPROVED,
-        self::STATUS_DENIED,
-        self::STATUS_PENDING
-    ];
+    use HasFactory, Notifiable, SoftDeletes, HasRoles;
 
     /**
      * The attributes that are mass assignable.

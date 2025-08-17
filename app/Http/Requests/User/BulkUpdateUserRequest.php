@@ -2,8 +2,8 @@
 
 namespace App\Http\Requests\User;
 
+use App\Enums\UserStatusType;
 use App\Models\Role;
-use App\Models\User;
 use App\Rules\ExistsWithGlobalScope;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -40,7 +40,7 @@ class BulkUpdateUserRequest extends BulkBaseUserRequest
                 'string',
                 'lowercase',
                 'max:255',
-                Rule::in(User::STATUS),
+                Rule::enum(UserStatusType::class),
                 Rule::requiredIf(!$this->filled('role')),
                 Rule::excludeIf($this->filled('role'))
             ],

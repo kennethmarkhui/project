@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Enums\RoleType;
+use App\Enums\UserStatusType;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 
@@ -18,7 +19,7 @@ class UserSeeder extends Seeder
             [
                 'name' => $role,
                 'email' => preg_replace('/\s+/', '', $role) . '@example.com',
-                'status' => User::STATUS_APPROVED
+                'status' => UserStatusType::APPROVED->value
             ],
             RoleType::values()
         );

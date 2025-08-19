@@ -3,6 +3,7 @@ import { Head, Link, router } from '@inertiajs/vue3';
 import { Pencil, Trash2, User, UserLock } from 'lucide-vue-next';
 
 import TooltipButton from '@/components/TooltipButton.vue';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useConfirmDialog } from '@/composables/useConfirmDialog';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -87,44 +88,46 @@ const handleDelete = async () => {
             <div class="grid gap-4 xl:grid-cols-3">
                 <div class="space-y-4 xl:col-span-3">
                     <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                        <div class="grid auto-cols-max grid-flow-col gap-4 rounded-lg border p-4">
-                            <User class="size-6 opacity-40" />
-                            <div class="flex flex-col gap-1">
-                                <span class="text-sm text-muted-foreground">Users</span>
-                                <span class="text-lg font-semibold">{{ props.role.users_count }}</span>
-                            </div>
-                        </div>
-                        <div class="grid auto-cols-max grid-flow-col gap-4 rounded-lg border p-4">
-                            <UserLock class="size-6 opacity-40" />
-                            <div class="flex flex-col gap-1">
-                                <span class="text-sm text-muted-foreground">Permissions</span>
-                                <span class="text-lg font-semibold">{{ props.role.permissions_count }}</span>
-                            </div>
-                        </div>
+                        <Card>
+                            <CardContent class="grid auto-cols-max grid-flow-col gap-4">
+                                <User class="size-6 opacity-40" />
+                                <div class="flex flex-col gap-1">
+                                    <span class="text-sm text-muted-foreground">Users</span>
+                                    <span class="text-lg font-semibold">{{ props.role.users_count }}</span>
+                                </div>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardContent class="grid auto-cols-max grid-flow-col gap-4">
+                                <UserLock class="size-6 opacity-40" />
+                                <div class="flex flex-col gap-1">
+                                    <span class="text-sm text-muted-foreground">Permissions</span>
+                                    <span class="text-lg font-semibold">{{ props.role.permissions_count }}</span>
+                                </div>
+                            </CardContent>
+                        </Card>
                     </div>
-                    <div class="flex flex-col gap-6 rounded-lg border py-6">
-                        <div class="space-y-4 px-6">
-                            <div class="space-y-2">
-                                <h3 class="font-semibold">Permissions</h3>
-                                <Separator />
-                                <div v-for="model in models" :key="model" class="space-y-2">
-                                    <div class="text-md flex gap-1 font-medium">
-                                        <p class="capitalize">{{ model }}</p>
-                                        <span class="text-muted-foreground">
-                                            ({{ actions.filter((action) => isChecked(model, action)).length }})
-                                        </span>
-                                    </div>
-                                    <div class="grid grid-cols-2 gap-2 md:grid-cols-3">
-                                        <template v-for="action in actions" :key="action">
-                                            <div v-if="isChecked(model, action)" class="flex items-center space-x-2">
-                                                <span class="text-muted-foreground capitalize">{{ action }}</span>
-                                            </div>
-                                        </template>
-                                    </div>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Permissions</CardTitle>
+                        </CardHeader>
+                        <Separator />
+                        <CardContent>
+                            <div v-for="model in models" :key="model" class="space-y-2">
+                                <div class="text-md flex gap-1 font-medium">
+                                    <p class="capitalize">{{ model }}</p>
+                                    <span class="text-muted-foreground"> ({{ actions.filter((action) => isChecked(model, action)).length }}) </span>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2 md:grid-cols-3">
+                                    <template v-for="action in actions" :key="action">
+                                        <div v-if="isChecked(model, action)" class="flex items-center space-x-2">
+                                            <span class="text-muted-foreground capitalize">{{ action }}</span>
+                                        </div>
+                                    </template>
                                 </div>
                             </div>
-                        </div>
-                    </div>
+                        </CardContent>
+                    </Card>
                 </div>
             </div>
         </div>

@@ -17,8 +17,6 @@ use Inertia\Inertia;
 
 class UserController extends Controller
 {
-    protected const PER_PAGE = 10;
-
     /**
      * Display a listing of the resource.
      */
@@ -31,7 +29,7 @@ class UserController extends Controller
         $query->filterBy($request->only('search', 'filters', 'deleted'))
             ->sortBy($request->only('sort'));
 
-        $result = $query->paginate($request->query('per_page') ?? self::PER_PAGE, ['*'], 'page', $request->query('page'))
+        $result = $query->paginate($request->query('per_page') ?? config('default.per_page'), ['*'], 'page', $request->query('page'))
             ->withQueryString();
 
         $filters = array_merge(

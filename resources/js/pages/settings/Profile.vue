@@ -42,6 +42,8 @@ const form = useForm({
 });
 
 const submit = () => {
+    if (!form.isDirty) return;
+
     form.patch(route('profile.update'), {
         preserveScroll: true,
     });
@@ -93,18 +95,7 @@ const submit = () => {
                 </div>
             </div>
 
-            <div class="flex items-center gap-4">
-                <Button :disabled="form.processing">Save</Button>
-
-                <Transition
-                    enter-active-class="transition ease-in-out"
-                    enter-from-class="opacity-0"
-                    leave-active-class="transition ease-in-out"
-                    leave-to-class="opacity-0"
-                >
-                    <p v-show="form.recentlySuccessful" class="text-sm text-neutral-600">Saved.</p>
-                </Transition>
-            </div>
+            <Button :disabled="form.processing || !form.isDirty">Save</Button>
         </form>
     </div>
 

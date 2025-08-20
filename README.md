@@ -109,6 +109,7 @@ Before you begin, ensure you have the following installed:
 | ----------- | ----------------------- |
 | Application | `http://localhost:8000` |
 | phpMyAdmin  | `http://localhost:8080` |
+| MailHog     | `http://localhost:8025` |
 
 ## Useful Commands
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Enums\UserStatusType;
 use App\Http\Controllers\Controller;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\RedirectResponse;
@@ -18,6 +19,9 @@ class VerifyEmailController extends Controller
         }
 
         $request->fulfill();
+
+        $request->user()->status = UserStatusType::APPROVED->value;
+        $request->user()->save();
 
         return redirect()->intended(route('dashboard', absolute: false) . '?verified=1');
     }

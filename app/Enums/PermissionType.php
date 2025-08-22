@@ -13,6 +13,7 @@ enum PermissionType: string
     case USER_DELETE = 'user.delete';
     case USER_FORCE_DELETE = 'user.force_delete';
     case USER_RESTORE = 'user.restore';
+    case USER_INVITE = 'user.invite';
 
     case ROLE_CREATE = 'role.create';
     case ROLE_READ = 'role.read';
@@ -43,6 +44,7 @@ enum PermissionType: string
                 self::USER_DELETE,
                 self::USER_FORCE_DELETE,
                 self::USER_RESTORE,
+                self::USER_INVITE,
             ],
             Role::class => [
                 self::ROLE_CREATE,

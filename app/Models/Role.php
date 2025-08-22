@@ -3,9 +3,10 @@
 namespace App\Models;
 
 use App\Traits\Models\HasSuperAdmin;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Spatie\Permission\Models\Role as SpatieRole;
 
 class Role extends SpatieRole
 {
-    use HasSuperAdmin;
+    use HasFactory, HasSuperAdmin;
 }

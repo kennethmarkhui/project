@@ -7,6 +7,7 @@ use App\Traits\Models\HasSuperAdmin;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -49,7 +50,6 @@ class User extends Authenticatable implements MustVerifyEmail
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            'approved' => 'boolean'
         ];
     }
 
@@ -162,5 +162,13 @@ class User extends Authenticatable implements MustVerifyEmail
             ->leftJoin('roles', 'roles.id', '=', 'model_has_roles.role_id')
             ->orderBy('roles.name', $descending ? 'desc' : 'asc')
             ->select('users.*');
+    }
+
+    /**
+     * Get the invitations made by the user.
+     */
+    public function invitees(): HasMany
+    {
+        return $this->hasMany(Invitation::class);
     }
 }

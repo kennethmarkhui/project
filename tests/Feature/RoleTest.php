@@ -58,7 +58,7 @@ test('authorized user can store', function () {
 });
 
 test('authorized user can view edit page', function () {
-    $role = Role::create(['name' => 'test']);
+    $role = Role::factory()->create();
 
     $response = $this->authorizedUser()->get(route('roles.edit', $role->id));
     $response->assertInertia(fn(AssertableInertia $page) => $page
@@ -84,7 +84,7 @@ test('authorized super admin user cannot view system role edit page', function (
 test('authorized user can update a role', function () {
     $expectedPermission = PermissionType::USER_READ->value;
     $permission = Permission::findOrCreate($expectedPermission);
-    $role = Role::findOrCreate('test');
+    $role = Role::factory()->create();
 
     $response = $this->authorizedUser()->patch(route('roles.update', $role->id), [
         'name' => 'updated',
@@ -99,7 +99,7 @@ test('authorized user can update a role', function () {
 });
 
 test('authorized user can delete a role', function () {
-    $role = Role::findOrCreate('test');
+    $role = Role::factory()->create();
 
     $response = $this->authorizedUser()->delete(route('roles.destroy', $role->id));
     $response->assertRedirect(route('roles'));

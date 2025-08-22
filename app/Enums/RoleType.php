@@ -32,6 +32,7 @@ enum RoleType: string
                 PermissionType::USER_DELETE,
                 PermissionType::USER_FORCE_DELETE,
                 PermissionType::USER_RESTORE,
+                PermissionType::USER_INVITE,
                 PermissionType::ROLE_CREATE,
                 PermissionType::ROLE_READ,
                 PermissionType::ROLE_UPDATE,

@@ -8,11 +8,22 @@ import AuthBase from '@/layouts/AuthLayout.vue';
 import { Head, useForm } from '@inertiajs/vue3';
 import { LoaderCircle } from 'lucide-vue-next';
 
+interface Props {
+    status?: string;
+    email?: string;
+    token?: string;
+}
+
+const props = defineProps<Props>();
+
+const isInvited = !!props.email && !!props.token;
+
 const form = useForm({
     name: '',
-    email: '',
+    email: props.email || '',
     password: '',
     password_confirmation: '',
+    token: props.token || null,
 });
 
 const submit = () => {
@@ -26,6 +37,10 @@ const submit = () => {
     <AuthBase title="Create an account" description="Enter your details below to create your account">
         <Head title="Register" />
 
+        <div v-if="status" class="mb-4 text-center text-sm font-medium">
+            {{ status }}
+        </div>
+
         <form @submit.prevent="submit" class="flex flex-col gap-6">
             <div class="grid gap-6">
                 <div class="grid gap-2">
@@ -36,7 +51,16 @@ const submit = () => {
 
                 <div class="grid gap-2">
                     <Label for="email">Email address</Label>
-                    <Input id="email" type="email" required :tabindex="2" autocomplete="email" v-model="form.email" placeholder="email@example.com" />
+                    <Input
+                        id="email"
+                        type="email"
+                        required
+                        :tabindex="2"
+                        autocomplete="email"
+                        v-model="form.email"
+                        placeholder="email@example.com"
+                        :disabled="isInvited"
+                    />
                     <InputError :message="form.errors.email" />
                 </div>
 
@@ -74,7 +98,7 @@ const submit = () => {
                 </Button>
             </div>
 
-            <div class="text-center text-sm text-muted-foreground">
+            <div v-if="!isInvited" class="text-center text-sm text-muted-foreground">
                 Already have an account?
                 <TextLink :href="route('login')" class="underline underline-offset-4" :tabindex="6">Log in</TextLink>
             </div>

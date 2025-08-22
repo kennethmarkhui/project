@@ -4,7 +4,7 @@ import type { Config } from 'ziggy-js';
 
 export type ResourceKey = 'user' | 'role' | 'permission';
 
-export type PermissionKey = 'create' | 'read' | 'update' | 'delete' | 'force_delete' | 'restore';
+export type PermissionKey = 'create' | 'read' | 'update' | 'delete' | 'force_delete' | 'restore' | 'invite';
 
 export type ResourcePermissions = {
     [P in PermissionKey]?: boolean;

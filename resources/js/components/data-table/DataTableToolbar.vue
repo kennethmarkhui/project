@@ -53,16 +53,10 @@ const onReset = () => emit('reset');
             </Button>
         </div>
 
-        <div class="flex items-center gap-2">
-            <Button
-                v-if="props.table.options.meta?.can?.create"
-                as-child
-                aria-label="Create"
-                role="combobox"
-                variant="outline"
-                size="sm"
-                class="ml-auto flex h-8"
-            >
+        <div class="flex flex-wrap items-center gap-2">
+            <slot name="button" />
+
+            <Button v-if="props.table.options.meta?.can?.create" as-child aria-label="Create" variant="outline" size="sm" class="ml-auto flex h-8">
                 <Link :href="`/${route().current()}/create`">
                     <Plus />
                     Create

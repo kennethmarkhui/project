@@ -338,7 +338,11 @@ const onRemoveRow = (key: string) => {
 
 <template>
     <div class="flex w-full flex-col gap-2.5 overflow-auto">
-        <DataTableToolbar :table="table" v-model:search-term="globalFilter" @reset="onReset" />
+        <DataTableToolbar :table="table" v-model:search-term="globalFilter" @reset="onReset">
+            <template #button>
+                <slot name="toolbarButton" />
+            </template>
+        </DataTableToolbar>
 
         <div class="rounded-md border">
             <Table>

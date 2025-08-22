@@ -59,6 +59,10 @@ const columns = getUserDataTableColumn(props.roles);
             },
         }"
     >
+        <template #toolbarButton>
+            <InviteUserDialog v-if="$page.props.auth.can?.user?.invite" :roles="props.roles.map((role) => role.name)" />
+        </template>
+
         <template #selectionListPopover="{ item: user }">
             <div class="truncate">
                 <div class="text-xs capitalize">

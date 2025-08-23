@@ -10,12 +10,12 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useConfirmDialog } from '@/composables/useConfirmDialog';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { getlayout } from '@/lib/layout';
+import { getLayout } from '@/lib/layout';
 import { isArrayEqual } from '@/lib/utils';
 import type { Permission, Role } from '@/types';
 
 defineOptions({
-    layout: getlayout(AppLayout, () => ({
+    layout: getLayout(AppLayout, () => ({
         breadcrumbs: [
             {
                 title: 'Roles',

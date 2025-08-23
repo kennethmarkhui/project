@@ -22,7 +22,11 @@ Route::middleware('guest')->group(function () {
 
     Route::post('/login', [AuthenticatedSessionController::class, 'store']);
 
-    Route::get('/accept-invite/{token}', [InvitationController::class, 'accept'])->name('invitation.accept');
+    Route::get('/accept-invite/{token}', [InvitationController::class, 'show'])
+        ->name('invitation.show');
+
+    Route::post('/accept-invite', [InvitationController::class, 'accept'])
+        ->name('invitation.accept');
 
     Route::get('/forgot-password', [PasswordResetLinkController::class, 'create'])
         ->name('password.request');
@@ -38,7 +42,8 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
-    Route::post('/accept-invite', [InvitationController::class, 'store'])->name('invitation.store');
+    Route::post('/send-invite', [InvitationController::class, 'store'])
+        ->name('invitation.store');
 
     Route::get('/verify-email', EmailVerificationPromptController::class)
         ->name('verification.notice');

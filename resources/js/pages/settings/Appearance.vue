@@ -5,11 +5,11 @@ import AppearanceTabs from '@/components/AppearanceTabs.vue';
 import HeadingSmall from '@/components/HeadingSmall.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
-import { getlayout, getlayoutStack } from '@/lib/layout';
+import { getLayout, getLayoutStack } from '@/lib/layout';
 
 defineOptions({
-    layout: getlayoutStack(
-        getlayout(AppLayout, () => ({
+    layout: getLayoutStack(
+        getLayout(AppLayout, () => ({
             breadcrumbs: [
                 {
                     title: 'Appearance settings',
@@ -17,7 +17,7 @@ defineOptions({
                 },
             ],
         })),
-        getlayout(SettingsLayout),
+        getLayout(SettingsLayout),
     ),
 });
 </script>

@@ -19,7 +19,7 @@ type LayoutComponent = Component & {
     layout?: Renderer<VNode> | Arrayable<VNode>;
 };
 
-export function getlayout<T extends LayoutComponent>(component: T, props?: () => ComponentProps<T>): Renderer<VNode> {
+export function getLayout<T extends LayoutComponent>(component: T, props?: () => ComponentProps<T>): Renderer<VNode> {
     const getProps = props ?? (() => ({}));
 
     return (h, page) => {
@@ -34,7 +34,7 @@ export function getlayout<T extends LayoutComponent>(component: T, props?: () =>
     };
 }
 
-export function getlayoutStack(...renderers: Renderer<VNode>[]): Renderer<VNode> {
+export function getLayoutStack(...renderers: Renderer<VNode>[]): Renderer<VNode> {
     return (h, page) => {
         return renderers.toReversed().reduce((child, renderer) => {
             return renderer(h, child);

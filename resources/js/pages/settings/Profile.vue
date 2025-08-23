@@ -9,12 +9,12 @@ import { Label } from '@/components/ui/label';
 import DeleteProfile from '@/components/users/DeleteProfile.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
-import { getlayout, getlayoutStack } from '@/lib/layout';
+import { getLayout, getLayoutStack } from '@/lib/layout';
 import { type User } from '@/types';
 
 defineOptions({
-    layout: getlayoutStack(
-        getlayout(AppLayout, () => ({
+    layout: getLayoutStack(
+        getLayout(AppLayout, () => ({
             breadcrumbs: [
                 {
                     title: 'Profile settings',
@@ -22,13 +22,12 @@ defineOptions({
                 },
             ],
         })),
-        getlayout(SettingsLayout),
+        getLayout(SettingsLayout),
     ),
 });
 
 interface Props {
     mustVerifyEmail: boolean;
-    status?: string;
 }
 
 defineProps<Props>();
@@ -89,10 +88,6 @@ const submit = () => {
                         Click here to resend the verification email.
                     </Link>
                 </p>
-
-                <div v-if="status === 'verification-link-sent'" class="mt-2 text-sm font-medium text-green-600">
-                    A new verification link has been sent to your email address.
-                </div>
             </div>
 
             <Button :disabled="form.processing || !form.isDirty">Save</Button>

@@ -10,11 +10,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/AppLayout.vue';
 import SidebarLayout from '@/layouts/shared/SidebarLayout.vue';
-import { getlayout } from '@/lib/layout';
+import { getLayout } from '@/lib/layout';
 import type { Permission } from '@/types';
 
 defineOptions({
-    layout: getlayout(AppLayout, () => ({
+    layout: getLayout(AppLayout, () => ({
         breadcrumbs: [
             {
                 title: 'Roles',

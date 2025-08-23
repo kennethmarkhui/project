@@ -2,6 +2,7 @@
 import DataTable from '@/components/data-table/DataTable.vue';
 import type { Paginated, Role, User } from '@/types';
 import { getUserDataTableColumn } from './column';
+import InviteUserDialog from './InviteUserDialog.vue';
 
 interface Props {
     users: Paginated<User[]>;

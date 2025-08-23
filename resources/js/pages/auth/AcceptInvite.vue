@@ -11,19 +11,20 @@ import { getLayout } from '@/lib/layout';
 
 defineOptions({
     layout: getLayout(AuthLayout, () => ({
-        title: 'Reset password',
-        description: 'Please enter your new password below',
+        title: 'Accept Invitation',
+        description: 'Enter your details below to accept the invitation',
     })),
 });
 
 interface Props {
-    token: string;
     email: string;
+    token: string;
 }
 
 const props = defineProps<Props>();
 
 const form = useForm({
+    name: '',
     token: props.token,
     email: props.email,
     password: '',
@@ -31,23 +32,27 @@ const form = useForm({
 });
 
 const submit = () => {
-    form.post(route('password.store'), {
-        onFinish: () => {
-            form.reset('password', 'password_confirmation');
-        },
+    form.post(route('invitation.accept'), {
+        onFinish: () => form.reset('password', 'password_confirmation'),
     });
 };
 </script>
 
 <template>
-    <Head title="Reset password" />
+    <Head title="Register" />
 
-    <form @submit.prevent="submit">
+    <form @submit.prevent="submit" class="flex flex-col gap-6">
         <div class="grid gap-6">
             <div class="grid gap-2">
-                <Label for="email">Email</Label>
-                <Input id="email" type="email" name="email" autocomplete="email" v-model="form.email" class="mt-1 block w-full" readonly />
-                <InputError :message="form.errors.email" class="mt-2" />
+                <Label for="name">Name</Label>
+                <Input id="name" type="text" required autofocus :tabindex="1" autocomplete="name" v-model="form.name" placeholder="Full name" />
+                <InputError :message="form.errors.name" />
+            </div>
+
+            <div class="grid gap-2">
+                <Label for="email">Email address</Label>
+                <Input id="email" type="email" required :tabindex="2" autocomplete="email" v-model="form.email" readonly />
+                <InputError :message="form.errors.email" />
             </div>
 
             <div class="grid gap-2">
@@ -55,33 +60,32 @@ const submit = () => {
                 <Input
                     id="password"
                     type="password"
-                    name="password"
+                    required
+                    :tabindex="3"
                     autocomplete="new-password"
                     v-model="form.password"
-                    class="mt-1 block w-full"
-                    autofocus
                     placeholder="Password"
                 />
                 <InputError :message="form.errors.password" />
             </div>
 
             <div class="grid gap-2">
-                <Label for="password_confirmation"> Confirm Password </Label>
+                <Label for="password_confirmation">Confirm password</Label>
                 <Input
                     id="password_confirmation"
                     type="password"
-                    name="password_confirmation"
+                    required
+                    :tabindex="4"
                     autocomplete="new-password"
                     v-model="form.password_confirmation"
-                    class="mt-1 block w-full"
                     placeholder="Confirm password"
                 />
                 <InputError :message="form.errors.password_confirmation" />
             </div>
 
-            <Button type="submit" class="mt-4 w-full" :disabled="form.processing">
+            <Button type="submit" class="mt-2 w-full" tabindex="5" :disabled="form.processing">
                 <LoaderCircle v-if="form.processing" class="h-4 w-4 animate-spin" />
-                Reset password
+                Create account
             </Button>
         </div>
     </form>

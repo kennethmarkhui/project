@@ -3,11 +3,11 @@ import { Head } from '@inertiajs/vue3';
 
 import RoleDataTable from '@/components/roles/data-table/RoleDataTable.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { getlayout } from '@/lib/layout';
+import { getLayout } from '@/lib/layout';
 import type { Permission, Role } from '@/types';
 
 defineOptions({
-    layout: getlayout(AppLayout, () => ({
+    layout: getLayout(AppLayout, () => ({
         breadcrumbs: [
             {
                 title: 'Roles',

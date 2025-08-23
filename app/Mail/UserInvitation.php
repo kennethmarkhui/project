@@ -40,7 +40,7 @@ class UserInvitation extends Mailable
         return new Content(
             markdown: 'mail.user-invitation',
             with: [
-                'url' => route('invitation.accept', $this->invitation->token)
+                'url' => route('invitation.show', $this->invitation->token)
             ]
         );
     }

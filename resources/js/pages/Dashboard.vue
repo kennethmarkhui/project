@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import AppLayout from '@/layouts/AppLayout.vue';
-import { getlayout } from '@/lib/layout';
 import { Head } from '@inertiajs/vue3';
-import PlaceholderPattern from '../components/PlaceholderPattern.vue';
+
+import PlaceholderPattern from '@/components/PlaceholderPattern.vue';
+import AppLayout from '@/layouts/AppLayout.vue';
+import { getLayout } from '@/lib/layout';
 
 defineOptions({
-    layout: getlayout(AppLayout, () => ({
+    layout: getLayout(AppLayout, () => ({
         breadcrumbs: [
             {
                 title: 'Dashboard',

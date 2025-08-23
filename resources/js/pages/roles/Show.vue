@@ -7,12 +7,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useConfirmDialog } from '@/composables/useConfirmDialog';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { getlayout } from '@/lib/layout';
+import { getLayout } from '@/lib/layout';
 import { getUniqueValues } from '@/lib/utils';
 import type { Permission, Role } from '@/types';
 
 defineOptions({
-    layout: getlayout(AppLayout, () => ({
+    layout: getLayout(AppLayout, () => ({
         breadcrumbs: [
             {
                 title: 'Roles',

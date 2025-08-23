@@ -3,11 +3,11 @@ import { Head } from '@inertiajs/vue3';
 
 import PermissionDataTable from '@/components/permissions/data-table/PermissionDataTable.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { getlayout } from '@/lib/layout';
+import { getLayout } from '@/lib/layout';
 import type { Permission, Role } from '@/types';
 
 defineOptions({
-    layout: getlayout(AppLayout, () => ({
+    layout: getLayout(AppLayout, () => ({
         breadcrumbs: [
             {
                 title: 'Permissions',

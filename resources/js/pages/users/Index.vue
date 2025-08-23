@@ -3,11 +3,11 @@ import { Head } from '@inertiajs/vue3';
 
 import UserDataTable from '@/components/users/data-table/UserDataTable.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { getlayout } from '@/lib/layout';
+import { getLayout } from '@/lib/layout';
 import type { Paginated, Role, User } from '@/types';
 
 defineOptions({
-    layout: getlayout(AppLayout, () => ({
+    layout: getLayout(AppLayout, () => ({
         breadcrumbs: [
             {
                 title: 'Users',

@@ -11,11 +11,11 @@ import DeleteUser from '@/components/users/DeleteUser.vue';
 import RestoreUser from '@/components/users/RestoreUser.vue';
 import { STATUS } from '@/constants';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { getlayout } from '@/lib/layout';
+import { getLayout } from '@/lib/layout';
 import type { User } from '@/types';
 
 defineOptions({
-    layout: getlayout(AppLayout, () => ({
+    layout: getLayout(AppLayout, () => ({
         breadcrumbs: [
             {
                 title: 'Users',

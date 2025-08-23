@@ -25,7 +25,6 @@ class AcceptInvitationRequest extends FormRequest
                 'unique:users,email',
             ],
             'password' => ['required', 'confirmed', Password::defaults()],
-            'token' => ['required', 'string']
         ];
     }
 }

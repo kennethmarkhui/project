@@ -80,33 +80,47 @@ test('unauthorized user cannot send a user invitation', function () {
 test('user with valid invite url is redirected to accept invite page', function () {
     $invitation = Invitation::factory()->create();
 
-    $response = $this->get(route('invitation.show', $invitation->token));
+    $verificationUrl = URL::temporarySignedRoute(
+        'invitation.show',
+        $invitation->expires_at,
+        ['invitation' => $invitation->id]
+    );
+
+    $response = $this->get($verificationUrl);
 
     $response->assertInertia(fn(AssertableInertia $page) => $page
         ->component('auth/AcceptInvite')
-        ->where('email', $invitation->email)
-        ->where('token', $invitation->token));
+        ->where('email', $invitation->email));
 });
 
-test('user with invalid invite url token is redirected to 404', function () {
-    $response = $this->get(route('invitation.show', 'invalid token'));
-
+test('user with invalid invite url is redirected to 404', function () {
+    $response = $this->get(route('invitation.show', 'invalid invite url'));
     $response->assertNotFound();
 });
 
-test('user with expired invite url is redirected to register with error', function () {
+test('user with expired invite url is redirected to 403', function () {
     $invitation = Invitation::factory()->expired()->create();
 
-    $response = $this->get(route('invitation.show', $invitation->token));
+    $verificationUrl = URL::temporarySignedRoute(
+        'invitation.show',
+        $invitation->expires_at,
+        ['invitation' => $invitation->id]
+    );
 
-    $response->assertRedirect(route('register'));
+    $response = $this->get($verificationUrl);
+    $response->assertForbidden();
 });
 
 test('user with used invite url is redirected to login with error', function () {
     $invitation = Invitation::factory()->accepted()->create();
 
-    $response = $this->get(route('invitation.show', $invitation->token));
+    $verificationUrl = URL::temporarySignedRoute(
+        'invitation.show',
+        $invitation->expires_at,
+        ['invitation' => $invitation->id]
+    );
 
+    $response = $this->get($verificationUrl);
     $response->assertRedirect(route('login'));
 });
 
@@ -120,7 +134,6 @@ test('user with valid invitation can create an account', function () {
         'email' => $invitation->email,
         'password' => 'password',
         'password_confirmation' => 'password',
-        'token' => $invitation->token,
     ]);
 
     $this->assertAuthenticated();
@@ -137,20 +150,6 @@ test('user with valid invitation can create an account', function () {
     Event::assertDispatched(Registered::class);
 });
 
-test('user with invalid invitation token cannot create an account', function () {
-    $invitation = Invitation::factory()->create();
-
-    $response = $this->post(route('invitation.accept'), [
-        'name' => 'Invited User',
-        'email' => $invitation->email,
-        'password' => 'password',
-        'password_confirmation' => 'password',
-        'token' => 'invalid token',
-    ]);
-
-    $response->assertNotFound();
-});
-
 test('user with expired invitation cannot create an account', function () {
     $invitation = Invitation::factory()->expired()->create();
 
@@ -159,7 +158,6 @@ test('user with expired invitation cannot create an account', function () {
         'email' => $invitation->email,
         'password' => 'password',
         'password_confirmation' => 'password',
-        'token' => $invitation->token,
     ]);
 
     $this->assertGuest();
@@ -174,7 +172,6 @@ test('user with used invitation cannot create an account', function () {
         'email' => $invitation->email,
         'password' => 'password',
         'password_confirmation' => 'password',
-        'token' => $invitation->token,
     ]);
 
     $this->assertGuest();
@@ -189,9 +186,8 @@ test('user with non-matching email in invitation cannot create an account', func
         'email' => 'non-matching' . $invitation->email,
         'password' => 'password',
         'password_confirmation' => 'password',
-        'token' => $invitation->token,
     ]);
 
     $this->assertGuest();
-    $response->assertRedirect(route('register'));
+    $response->assertNotFound();
 });

@@ -18,14 +18,12 @@ defineOptions({
 
 interface Props {
     email: string;
-    token: string;
 }
 
 const props = defineProps<Props>();
 
 const form = useForm({
     name: '',
-    token: props.token,
     email: props.email,
     password: '',
     password_confirmation: '',

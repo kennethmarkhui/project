@@ -22,7 +22,8 @@ Route::middleware('guest')->group(function () {
 
     Route::post('/login', [AuthenticatedSessionController::class, 'store']);
 
-    Route::get('/accept-invite/{token}', [InvitationController::class, 'show'])
+    Route::get('/accept-invite/{invitation}', [InvitationController::class, 'show'])
+        ->middleware('signed')
         ->name('invitation.show');
 
     Route::post('/accept-invite', [InvitationController::class, 'accept'])

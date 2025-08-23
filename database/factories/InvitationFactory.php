@@ -23,7 +23,6 @@ class InvitationFactory extends Factory
         return [
             'email' => fake()->unique()->safeEmail(),
             'role_id' => Role::factory(),
-            'token' => Str::random(),
             'invited_by' => User::factory(),
             'expires_at' => Carbon::now()->addDay(),
             'accepted_at' => null,

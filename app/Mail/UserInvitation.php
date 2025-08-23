@@ -9,6 +9,7 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\URL;
 
 class UserInvitation extends Mailable
 {
@@ -40,7 +41,11 @@ class UserInvitation extends Mailable
         return new Content(
             markdown: 'mail.user-invitation',
             with: [
-                'url' => route('invitation.show', $this->invitation->token)
+                'url' => URL::temporarySignedRoute(
+                    'invitation.show',
+                    $this->invitation->expires_at,
+                    ['invitation' => $this->invitation->id]
+                )
             ]
         );
     }

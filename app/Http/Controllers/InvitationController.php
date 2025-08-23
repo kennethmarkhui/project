@@ -17,7 +17,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 class InvitationController extends Controller
@@ -32,7 +31,6 @@ class InvitationController extends Controller
         $invitation = Invitation::query()->create([
             'email' => $request->safe()->email,
             'role_id' => Role::findByName($request->safe()->role)->id,
-            'token' => Str::random(60),
             'invited_by' => $request->user()->id,
             'expires_at' => Carbon::now()->addDay()
         ]);
@@ -45,21 +43,14 @@ class InvitationController extends Controller
     /**
      * Show the invitation form page.
      */
-    public function show(Request $request)
+    public function show(Request $request, Invitation $invitation)
     {
-        $invitation = Invitation::query()->where('token', $request->route('token'))->firstOrFail();
-
-        if ($invitation->isExpired()) {
-            return to_route('register')->with('error', 'Invalid or expired invitation');
-        }
-
         if ($invitation->isAccepted()) {
             return to_route('login')->with('error', 'Invation has already been used');
         }
 
         return Inertia::render('auth/AcceptInvite', [
-            'email' => $invitation->email,
-            'token' => $request->route('token')
+            'email' => $invitation->email
         ]);
     }
 
@@ -68,7 +59,7 @@ class InvitationController extends Controller
      */
     public function accept(AcceptInvitationRequest $request)
     {
-        $invitation = Invitation::query()->where('token', $request->safe()->token)->firstOrFail();
+        $invitation = Invitation::query()->where('email', $request->safe()->email)->firstOrFail();
 
         if ($invitation->isExpired()) {
             return to_route('register')->with('error', 'Invalid or expired invitation');
@@ -76,10 +67,6 @@ class InvitationController extends Controller
 
         if ($invitation->isAccepted()) {
             return to_route('login')->with('error', 'Invation has already been used');
-        }
-
-        if ($invitation && $invitation->email !== $request->email) {
-            return to_route('register')->with('error', 'Email must match the invitation');
         }
 
         $user = User::query()->create([
@@ -89,7 +76,7 @@ class InvitationController extends Controller
             'status' => UserStatusType::APPROVED->value
         ]);
 
-        $invitation->update(['accepted_at' => now()]);
+        $invitation->update(['accepted_at' => Carbon::now()]);
 
         $user->syncRoles($invitation->role_id);
 

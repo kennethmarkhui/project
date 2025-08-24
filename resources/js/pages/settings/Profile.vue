@@ -10,7 +10,6 @@ import DeleteProfile from '@/components/users/DeleteProfile.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
 import { getLayout, getLayoutStack } from '@/lib/layout';
-import { type User } from '@/types';
 
 defineOptions({
     layout: getLayoutStack(
@@ -33,7 +32,7 @@ interface Props {
 defineProps<Props>();
 
 const page = usePage();
-const user = page.props.auth.user as User;
+const user = page.props.auth.user;
 
 const form = useForm({
     name: user.name,

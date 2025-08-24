@@ -10,7 +10,7 @@ import { useConfirmDialog } from '@/composables/useConfirmDialog';
 import ConfirmDialogContentFooter from './ConfirmDialogContentFooter.vue';
 import ConfirmDialogContentHeader from './ConfirmDialogContentHeader.vue';
 
-const passwordInput = ref<HTMLInputElement | null>(null);
+const passwordInput = ref<InstanceType<typeof Input> | null>(null);
 
 const form = useForm({
     password: '',
@@ -25,10 +25,7 @@ const onSubmit = () => {
         preserveScroll: true,
         onSuccess: () => closeDialog(true),
         onError: () => {
-            // TODO: passwordInput ref is not working
-            if (passwordInput.value instanceof HTMLInputElement) {
-                passwordInput.value.focus();
-            }
+            passwordInput?.value?.$el.focus();
         },
         onFinish: () => form.reset(),
     });

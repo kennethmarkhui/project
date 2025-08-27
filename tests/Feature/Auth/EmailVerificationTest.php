@@ -47,3 +47,43 @@ test('email is not verified with invalid hash', function () {
 
     expect($user->fresh()->hasVerifiedEmail())->toBeFalse();
 });
+
+test('email is not verified with invalid user id', function () {
+    $user = User::factory()->unverified()->create();
+
+    $verificationUrl = URL::temporarySignedRoute(
+        'verification.verify',
+        now()->addMinutes(60),
+        ['id' => 123, 'hash' => sha1($user->email)]
+    );
+
+    $this->actingAs($user)->get($verificationUrl);
+
+    $this->assertFalse($user->fresh()->hasVerifiedEmail());
+});
+
+test('verified user is redirected to dashboard from verification prompt', function () {
+    $user = User::factory()->create();
+
+    $response = $this->actingAs($user)->get('/verify-email');
+
+    $response->assertRedirect(route('dashboard', absolute: false));
+});
+
+test('already verified user visiting verification link is redirected without firing event again', function () {
+    $user = User::factory()->create();
+
+    Event::fake();
+
+    $verificationUrl = URL::temporarySignedRoute(
+        'verification.verify',
+        now()->addMinutes(60),
+        ['id' => $user->id, 'hash' => sha1($user->email)]
+    );
+
+    $this->actingAs($user)->get($verificationUrl)
+        ->assertRedirect(route('dashboard', absolute: false) . '?verified=1');
+
+    $this->assertTrue($user->fresh()->hasVerifiedEmail());
+    Event::assertNotDispatched(Verified::class);
+});

@@ -34,7 +34,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/roles/{role}/update', [RoleController::class, 'update'])->name('roles.update');
     Route::delete('/roles/{role}/delete', [RoleController::class, 'destroy'])->name('roles.destroy');
 
-    Route::get('/permissions', [PermissionController::class, 'index'])->name('permissions');
+    Route::get('/permissions', PermissionController::class)->name('permissions');
 });
 
 

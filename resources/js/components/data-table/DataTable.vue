@@ -1,5 +1,4 @@
 <script setup lang="ts" generic="TData extends RowData">
-import { router } from '@inertiajs/vue3';
 import {
     type ColumnDef,
     type ColumnFiltersState,
@@ -15,10 +14,10 @@ import {
     type RowSelectionState,
     type SortingState,
     type TableOptionsWithReactiveData,
+    TableState,
     useVueTable,
     type VisibilityState,
 } from '@tanstack/vue-table';
-import { useDebounceFn } from '@vueuse/core';
 import { computed, h, ref, type Ref } from 'vue';
 
 import { Checkbox } from '@/components/ui/checkbox';
@@ -60,7 +59,14 @@ interface Props {
     >;
 }
 
+interface Emits {
+    change: [state: TableState];
+    success: [];
+}
+
 const props = defineProps<Props>();
+
+const emits = defineEmits<Emits>();
 
 const columnFilters = ref<ColumnFiltersState>(props.options?.state?.columnFilters ?? []);
 const globalFilter = ref<string>(props.options?.state?.globalFilter ?? '');
@@ -142,7 +148,7 @@ const actionColumn = columnHelper.display({
                 isDisabled,
                 row: row.original,
                 tableMeta: table.options.meta as any,
-                onSuccess: () => refetch(),
+                onSuccess: () => emits('success'),
             }),
         );
     },
@@ -270,55 +276,9 @@ const tableOptions = computed<TableOptionsWithReactiveData<TData>>(() => {
 
 const table = useVueTable(tableOptions.value);
 
-const buildQuery = () => {
-    const query: { search?: string; page?: number; per_page?: number; sort?: string; filters?: string; deleted?: string } = {};
-    const search = globalFilter.value;
-    const filters = columnFilters.value.filter((item) => item.id !== 'deleted_at');
-    const sort = sorting.value;
-    const page = pagination.value.pageIndex;
-    const per_page = pagination.value.pageSize !== PER_PAGE && pagination.value.pageSize;
-    const deleted = columnFilters.value.find((item) => item.id === 'deleted_at');
-
-    if (search) {
-        query.search = search;
-    }
-
-    if (Array.isArray(filters) && filters.length > 0) {
-        query.filters = JSON.stringify(filters);
-    }
-
-    if (Array.isArray(sort) && sort.length > 0) {
-        query.sort = JSON.stringify(sort);
-    }
-
-    if (deleted && Array.isArray(deleted.value) && deleted.value.length > 0) {
-        query.deleted = deleted.value[0];
-    }
-
-    if (per_page) {
-        query.per_page = per_page;
-    }
-
-    query.page = page && page + 1;
-
-    return Object.fromEntries(Object.entries(query).filter(([_key, value]) => Boolean(value)));
+const onChange = () => {
+    emits('change', table.getState());
 };
-
-const currentRoute = route().current();
-const refetch = () => {
-    if (!currentRoute) return;
-
-    router.visit(currentRoute, {
-        method: 'get',
-        data: buildQuery(),
-        preserveState: true,
-        replace: true,
-    });
-};
-
-const onChange = useDebounceFn(() => {
-    refetch();
-}, 300);
 
 const onReset = () => {
     columnFilters.value = [];
@@ -382,7 +342,7 @@ const onRemoveRow = (key: string) => {
             <DataTablePagination :table="table" />
         </div>
 
-        <DataTableActionBar :table="table" :is-deleted="isDeletedSelection" @success="() => refetch()">
+        <DataTableActionBar :table="table" :is-deleted="isDeletedSelection" @success="() => emits('success')">
             <template #popover>
                 <DataTableActionBarSelectionList :items="Array.from(selectedRows)" @remove="onRemoveRow">
                     <template #default="{ item }">

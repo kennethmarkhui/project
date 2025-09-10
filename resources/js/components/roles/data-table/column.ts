@@ -38,6 +38,7 @@ export function getRoleDataTableColumn(permissions: Permission[]) {
         }),
         columnHelper.accessor('users_count', {
             header: ({ column }) => h(DataTableColumnHeader<Role, unknown>, { column, title: 'Users' }),
+            meta: { label: 'Users' },
             size: 40,
         }),
     ] as ColumnDef<Role>[];

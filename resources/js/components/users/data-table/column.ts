@@ -14,10 +14,12 @@ export function getUserDataTableColumn(roles: Role[]) {
         columnHelper.accessor('name', {
             header: ({ column }) => h(DataTableColumnHeader<User, unknown>, { column, title: 'Name' }),
             enableColumnFilter: false,
+            meta: { label: 'Name' },
         }),
         columnHelper.accessor('email', {
             header: ({ column }) => h(DataTableColumnHeader<User, unknown>, { column, title: 'Email' }),
             enableColumnFilter: false,
+            meta: { label: 'Email' },
         }),
         columnHelper.accessor('role', {
             header: ({ column }) => h(DataTableColumnHeader<User, unknown>, { column, title: 'Role' }),

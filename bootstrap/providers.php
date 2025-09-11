@@ -2,5 +2,6 @@
 
 return [
     App\Providers\AppServiceProvider::class,
-    Spatie\Permission\PermissionServiceProvider::class
+    App\Providers\FortifyServiceProvider::class,
+    Spatie\Permission\PermissionServiceProvider::class,
 ];

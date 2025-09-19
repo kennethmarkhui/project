@@ -1,8 +1,8 @@
-import { ToastType } from '@/components/Toaster.vue';
+import type { ToastType } from '@/components/Toaster.vue';
 import type { LucideIcon } from 'lucide-vue-next';
 import type { Config } from 'ziggy-js';
 
-export type ResourceKey = 'user' | 'role' | 'permission';
+export type ResourceKey = 'user' | 'role' | 'permission' | 'activity_log';
 
 export type PermissionKey = 'create' | 'read' | 'update' | 'delete' | 'force_delete' | 'restore' | 'invite';
 
@@ -73,6 +73,18 @@ export interface Role {
     permissions?: Permission[];
     permissions_count?: number;
     users_count?: number;
+}
+
+export interface ActivityLog {
+    id: number;
+    log_name: string;
+    event: string;
+    subject_id: number;
+    subject_type: string;
+    properties: unknown;
+    causer: User | null;
+    created_at: string;
+    updated_at: string;
 }
 
 export interface Paginated<T> {

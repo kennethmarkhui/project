@@ -6,6 +6,7 @@ import { computed } from 'vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Link } from '@inertiajs/vue3';
+import DataTableDateFilter from './DataTableDateFilter.vue';
 import DataTableFacetedFilter from './DataTableFacetedFilter.vue';
 import DataTableViewOptions from './DataTableViewOptions.vue';
 
@@ -25,7 +26,7 @@ const searchTerm = defineModel('searchTerm', { default: '' });
 
 const isFiltered = computed(() => props.table.getState().columnFilters.length > 0 || Boolean(props.table.getState().globalFilter));
 
-const columns = props.table.getAllColumns().filter((column) => column.getCanFilter() && column.columnDef.meta);
+const columns = props.table.getAllColumns().filter((column) => column.getCanFilter() && column.columnDef.meta?.variant);
 
 const onReset = () => emit('reset');
 </script>
@@ -40,12 +41,14 @@ const onReset = () => emit('reset');
                 :model-value="searchTerm"
                 @update:model-value="(value) => table.setGlobalFilter(value)"
             />
-            <DataTableFacetedFilter
-                v-for="column in columns"
-                :key="column.id"
-                :column="column"
-                :multiple="column.columnDef.meta?.variant === 'multiSelect'"
-            />
+            <template v-for="column in columns" :key="column.id">
+                <DataTableFacetedFilter
+                    v-if="column.columnDef.meta?.variant === 'select' || column.columnDef.meta?.variant === 'multiSelect'"
+                    :column="column"
+                    :multiple="column.columnDef.meta?.variant === 'multiSelect'"
+                />
+                <DataTableDateFilter v-else :column="column" />
+            </template>
 
             <Button v-if="isFiltered" aria-label="Reset filters" variant="outline" size="sm" class="border-dashed" @click="onReset">
                 <X />

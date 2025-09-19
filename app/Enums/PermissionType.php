@@ -2,6 +2,7 @@
 
 namespace App\Enums;
 
+use App\Models\ActivityLog;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
@@ -21,6 +22,8 @@ enum PermissionType: string
     case ROLE_DELETE = 'role.delete';
 
     case PERMISSION_READ = 'permission.read';
+
+    case ACTIVITY_LOG_READ = 'activity_log.read';
 
     /**
      * Get all permission values
@@ -54,6 +57,9 @@ enum PermissionType: string
             ],
             Permission::class => [
                 self::PERMISSION_READ,
+            ],
+            ActivityLog::class => [
+                self::ACTIVITY_LOG_READ,
             ],
             default => [],
         };

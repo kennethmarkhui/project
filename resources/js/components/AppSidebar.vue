@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid, UserCog, UserLock, Users } from 'lucide-vue-next';
+import { BookOpen, Folder, LayoutGrid, ScrollText, UserCog, UserLock, Users } from 'lucide-vue-next';
 import { computed } from 'vue';
 
 import NavFooter from '@/components/NavFooter.vue';
@@ -31,6 +31,11 @@ const mainNavItems: NavItem[] = [
         href: '/permissions',
         icon: UserLock,
     },
+    {
+        title: 'Activity Logs',
+        href: '/activity-logs',
+        icon: ScrollText,
+    },
 ];
 
 const footerNavItems: NavItem[] = [
@@ -53,7 +58,8 @@ const filteredNavItems = computed(() => {
         if (item.href === '/dashboard') return true;
 
         // regex for '/' start of the string and 's' end of the string
-        const singularPath = item.href.replace(/^\/|s$/g, '');
+        // second regex is for converting snake_case to kebab-case
+        const singularPath = item.href.replace(/^\/|s$/g, '').replace(/-/g, '_');
 
         return page.props.auth.can[singularPath as ResourceKey]?.read;
     });

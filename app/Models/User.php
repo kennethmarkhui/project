@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Observers\UserObserver;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Traits\Models\HasSuperAdmin;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -12,12 +14,15 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Permission\Traits\HasRoles;
 
+#[ObservedBy([UserObserver::class])]
 class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, SoftDeletes, HasRoles, HasSuperAdmin, TwoFactorAuthenticatable;
+    use HasFactory, Notifiable, SoftDeletes, HasRoles, HasSuperAdmin, TwoFactorAuthenticatable, LogsActivity;
 
     /**
      * The attributes that are mass assignable.
@@ -52,6 +57,16 @@ class User extends Authenticatable implements MustVerifyEmail
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->useLogName('user')
+            ->logFillable()
+            ->logOnlyDirty()
+            ->logExcept(['password'])
+            ->dontSubmitEmptyLogs();
     }
 
     /**

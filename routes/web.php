@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
@@ -35,6 +36,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/roles/{role}/delete', [RoleController::class, 'destroy'])->name('roles.destroy');
 
     Route::get('/permissions', PermissionController::class)->name('permissions');
+
+    Route::get('/activity-logs', ActivityLogController::class)->name('activity.logs');
 });
 
 

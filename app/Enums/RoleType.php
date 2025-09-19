@@ -38,6 +38,7 @@ enum RoleType: string
                 PermissionType::ROLE_UPDATE,
                 PermissionType::ROLE_DELETE,
                 PermissionType::PERMISSION_READ,
+                PermissionType::ACTIVITY_LOG_READ,
             ],
             self::EDITOR => [
                 PermissionType::USER_READ,

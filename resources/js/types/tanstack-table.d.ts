@@ -7,7 +7,7 @@ declare module '@tanstack/vue-table' {
     interface ColumnMeta {
         label?: string;
         options?: Option[];
-        variant?: 'multiSelect' | 'select';
+        variant?: 'dateRange' | 'select' | 'multiSelect';
         action?: {
             enabled: boolean;
             icon?: LucideIcon;

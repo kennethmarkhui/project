@@ -28,6 +28,8 @@ class InvitationController extends Controller
     {
         Gate::authorize('create', Invitation::class);
 
+        $request->isInvitationNotExpired()?->delete();
+
         $invitation = Invitation::query()->create([
             'email' => $request->safe()->email,
             'role_id' => Role::findByName($request->safe()->role)->id,

@@ -26,6 +26,24 @@ test('authorized user can send a user invitation', function () {
     expect($invitation)->not->toBeNull();
 });
 
+test('authorized user can send another user invitation for expired invitation', function () {
+    Mail::fake();
+
+    $email = 'test@example.com';
+    Invitation::factory()->expired()->create([
+        'email' => $email,
+    ]);
+
+    $response = $this->authorizedUser()->post(route('invitation.store'), [
+        'email' => $email,
+        'role' => RoleType::USER->value
+    ]);
+
+    $response->assertValid()->assertRedirect();
+
+    Mail::assertSent(UserInvitation::class, $email);
+});
+
 test('authorized super user can send a user invitation with super admin role', function () {
     Mail::fake();
 

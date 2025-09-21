@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Invitation;
 
+use App\Models\Invitation;
 use App\Models\Role;
 use App\Rules\ExistsWithGlobalScope;
 use Illuminate\Foundation\Http\FormRequest;
@@ -31,9 +32,24 @@ class StoreInvitationRequest extends FormRequest
                 'email',
                 'max:255',
                 'unique:users,email',
-                'unique:invitations,email'
             ],
             'role' => ['required', 'string', 'lowercase', 'max:255', new ExistsWithGlobalScope(Role::class, 'name')],
         ];
+    }
+
+    /**
+     * Invitation is not expired.
+     * 
+     * @return null|\App\Models\Invitation
+     */
+    public function isInvitationNotExpired(): ?Invitation
+    {
+        $existingInvitation = Invitation::query()
+            ->where('email', $this->email)
+            ->first();
+
+        return $existingInvitation?->isExpired()
+            ? $existingInvitation
+            : null;
     }
 }

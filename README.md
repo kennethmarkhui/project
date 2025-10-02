@@ -115,17 +115,27 @@ Before you begin, ensure you have the following installed:
 
 ### Docker Commands
 
-```bash
-# Start containers
+Start containers
+
+```
 docker-compose up -d
+```
 
-# Stop containers
+Stop containers
+
+```
 docker-compose down
+```
 
-# Access PHP container shell
+Access PHP container shell
+
+```
 docker-compose exec app bash
+```
 
-# List running containers
+List running containers
+
+```
 docker-compose ps
 ```
 
@@ -133,24 +143,51 @@ docker-compose ps
 
 If you're using Docker setup, prepend docker-compose exec app to each command below.
 
-```bash
-# Start dev server
+Start dev server
+
+```
 composer run dev
 # → docker-compose exec app composer run dev
+```
 
-# List all laravel commands
+List all laravel commands
+
+```
 php artisan
 # → docker-compose exec app php artisan
+```
 
-# Run migrations
+Run migrations
+
+```
 php artisan migrate
 # → docker-compose exec app php artisan migrate
+```
 
-# Clear application cache
+Clear application cache
+
+```
 php artisan cache:clear
 # → docker-compose exec app php artisan cache:clear
+```
 
-# Run tests
+Run tests
+
+```
 php artisan test
 # → docker-compose exec app php artisan test
+```
+
+### Laravel IDE Helper Generator
+
+Generate PHPDocs for facades (\_ide_helper.php)
+
+```
+php artisan ide-helper:generate
+```
+
+Generate PHPDocs for models (\_ide_helper_models.php)
+
+```
+php artisan ide-helper:models -N
 ```

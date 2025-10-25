@@ -25,7 +25,7 @@ class UserSeeder extends Seeder
         );
 
         foreach ($users as $user) {
-            $userModel = User::factory()->create($user);
+            $userModel = User::factory()->withoutTwoFactor()->create($user);
             $userModel->syncRoles($user['name']);
         }
 

@@ -1,5 +1,13 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
+
+interface Props {
+    canRegister: boolean;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    canRegister: true,
+});
 </script>
 
 <template>
@@ -25,6 +33,7 @@ import { Head, Link } from '@inertiajs/vue3';
                         Log in
                     </Link>
                     <Link
+                        v-if="props.canRegister"
                         :href="route('register')"
                         class="inline-block rounded-sm border border-[#19140035] px-5 py-1.5 text-sm leading-normal text-[#1b1b18] hover:border-[#1915014a] dark:border-[#3E3E3A] dark:text-[#EDEDEC] dark:hover:border-[#62605b]"
                     >

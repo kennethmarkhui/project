@@ -37,7 +37,7 @@ const form = useForm({
 const updatePassword = () => {
     if (!form.isDirty) return;
 
-    form.put(route('password.update'), {
+    form.put(route('user-password.update'), {
         preserveScroll: true,
         onSuccess: () => form.reset(),
         onError: (errors: any) => {

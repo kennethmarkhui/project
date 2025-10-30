@@ -11,6 +11,11 @@ import { Label } from '@/components/ui/label';
 import AuthLayout from '@/layouts/AuthLayout.vue';
 import { getLayout } from '@/lib/layout';
 
+interface Props {
+    canResetPassword: boolean;
+    canRegister: boolean;
+}
+
 defineOptions({
     layout: getLayout(AuthLayout, () => ({
         title: 'Log in to your account',
@@ -18,9 +23,7 @@ defineOptions({
     })),
 });
 
-defineProps<{
-    canResetPassword: boolean;
-}>();
+const props = defineProps<Props>();
 
 const form = useForm({
     email: '',
@@ -58,7 +61,9 @@ const submit = () => {
             <div class="grid gap-2">
                 <div class="flex items-center justify-between">
                     <Label for="password">Password</Label>
-                    <TextLink v-if="canResetPassword" :href="route('password.request')" class="text-sm" :tabindex="5"> Forgot password? </TextLink>
+                    <TextLink v-if="props.canResetPassword" :href="route('password.request')" class="text-sm" :tabindex="5">
+                        Forgot password?
+                    </TextLink>
                 </div>
                 <Input
                     id="password"
@@ -85,7 +90,7 @@ const submit = () => {
             </Button>
         </div>
 
-        <div class="text-center text-sm text-muted-foreground">
+        <div v-if="props.canRegister" class="text-center text-sm text-muted-foreground">
             Don't have an account?
             <TextLink :href="route('register')" :tabindex="5">Sign up</TextLink>
         </div>

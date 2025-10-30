@@ -1,15 +1,29 @@
 <?php
 
 use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use Laravel\Fortify\Features;
 
-Route::get('/', function () {
-    return Inertia::render('Welcome');
-})->name('home');
+Route::middleware('guest')->group(function () {
+    Route::get('/', function () {
+        return Inertia::render('Welcome', [
+            'canRegister' => Features::enabled(Features::registration()),
+        ]);
+    })->name('home');
+
+    Route::get('/accept-invite/{invitation}', [InvitationController::class, 'show'])
+        ->middleware('signed')
+        ->name('invitation.show');
+
+    Route::post('/accept-invite', [InvitationController::class, 'accept'])
+        ->name('invitation.accept');
+});
+
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', function () {
@@ -37,9 +51,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/permissions', PermissionController::class)->name('permissions');
 
+    Route::post('/send-invite', [InvitationController::class, 'store'])
+        ->name('invitation.store');
+
     Route::get('/activity-logs', ActivityLogController::class)->name('activity.logs');
 });
 
 
 require __DIR__ . '/settings.php';
-require __DIR__ . '/auth.php';
